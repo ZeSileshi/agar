@@ -14,6 +14,7 @@ import { discoveryRouter } from './routes/discovery.js';
 import { chatRouter } from './routes/chat.js';
 import { referralRouter } from './routes/referrals.js';
 import { compatibilityRouter } from './routes/compatibility.js';
+import { referralProfileRouter } from './routes/referral-profiles.js';
 import { initWebSocket } from './websocket/index.js';
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/v1/discovery', discoveryRouter);
 app.use('/api/v1/chat', chatRouter);
 app.use('/api/v1/referrals', referralRouter);
 app.use('/api/v1/compatibility', compatibilityRouter);
+app.use('/api/v1/referral-profiles', referralProfileRouter);
 
 // Error handling
 app.use(errorHandler);

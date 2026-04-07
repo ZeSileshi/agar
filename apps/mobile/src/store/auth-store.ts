@@ -1,26 +1,62 @@
 import { create } from 'zustand';
-import type { User, AuthTokens } from '@agar/shared';
+
+export type UserType = 'direct' | 'referrer';
 
 interface AuthState {
-  user: User | null;
-  tokens: AuthTokens | null;
+  // Registration flow
+  phone: string;
+  otp: string;
+  userType: UserType | null;
+
+  // Auth tokens
+  accessToken: string | null;
+  userId: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+
+  // Profile data (collected during onboarding)
   language: 'en' | 'am' | 'es';
-  setUser: (user: User | null) => void;
-  setTokens: (tokens: AuthTokens | null) => void;
-  setLanguage: (lang: 'en' | 'am' | 'es') => void;
+
+  // Actions
+  setPhone: (phone: string) => void;
+  setOtp: (otp: string) => void;
+  setUserType: (userType: UserType) => void;
+  login: (accessToken: string, userId: string) => void;
   logout: () => void;
+  setLanguage: (lang: 'en' | 'am' | 'es') => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  tokens: null,
+  phone: '',
+  otp: '',
+  userType: null,
+  accessToken: null,
+  userId: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false,
   language: 'en',
-  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
-  setTokens: (tokens) => set({ tokens }),
+
+  setPhone: (phone) => set({ phone }),
+  setOtp: (otp) => set({ otp }),
+  setUserType: (userType) => set({ userType }),
+
+  login: (accessToken, userId) =>
+    set({
+      accessToken,
+      userId,
+      isAuthenticated: true,
+      isLoading: false,
+    }),
+
+  logout: () =>
+    set({
+      phone: '',
+      otp: '',
+      userType: null,
+      accessToken: null,
+      userId: null,
+      isAuthenticated: false,
+    }),
+
   setLanguage: (language) => set({ language }),
-  logout: () => set({ user: null, tokens: null, isAuthenticated: false }),
 }));

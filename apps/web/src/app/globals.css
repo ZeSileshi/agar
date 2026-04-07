@@ -1,67 +1,63 @@
 @import "tailwindcss";
 
 @theme {
-  /* Agar Brand Colors */
-  --color-primary-50: #f0edff;
-  --color-primary-100: #ddd6fe;
-  --color-primary-200: #c4b5fd;
-  --color-primary-300: #a78bfa;
-  --color-primary-400: #8b5cf6;
-  --color-primary-500: #6c5ce7;
-  --color-primary-600: #5b4bd5;
-  --color-primary-700: #4c3fc0;
-  --color-primary-800: #3d329d;
-  --color-primary-900: #2e2578;
+  /* Agar Brand — celestial gold + rich navy palette */
+  --color-navy-950: #081E36;
+  --color-navy-900: #0C2948;
+  --color-navy-800: #103456;
+  --color-navy-700: #174268;
+  --color-navy-600: #1E5580;
 
-  --color-accent-50: #fff1f0;
-  --color-accent-100: #ffe0de;
-  --color-accent-200: #ffc7c4;
-  --color-accent-300: #ff9e99;
-  --color-accent-400: #ff6b6b;
-  --color-accent-500: #ff4757;
-  --color-accent-600: #ed2d3f;
-  --color-accent-700: #c81e30;
-  --color-accent-800: #a51d2e;
-  --color-accent-900: #881e2c;
+  --color-gold-50: #fef9f0;
+  --color-gold-100: #fdf0d5;
+  --color-gold-200: #f5dca0;
+  --color-gold-300: #e8c46a;
+  --color-gold-400: #d4a54a;
+  --color-gold-500: #c49535;
+  --color-gold-600: #a87b2e;
 
-  --color-gold-50: #fffbeb;
-  --color-gold-100: #fef3c7;
-  --color-gold-200: #fde68a;
-  --color-gold-300: #ffd93d;
-  --color-gold-400: #fbbf24;
-  --color-gold-500: #f59e0b;
-  --color-gold-600: #d97706;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
 
-  --color-surface: #ffffff;
-  --color-surface-dark: #0f0f23;
-  --color-background: #fafafa;
-  --color-background-dark: #0a0a1a;
+  --color-surface: #103456;
+  --color-background: #0C2948;
 
   /* Typography */
-  --font-sans: 'Inter', 'Noto Sans Ethiopic', system-ui, -apple-system, sans-serif;
-  --font-display: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', system-ui, sans-serif;
+  --font-sans: var(--font-body), var(--font-ethiopic), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display), var(--font-ethiopic), system-ui, sans-serif;
+  --font-accent: var(--font-accent), var(--font-ethiopic), monospace;
 
   /* Spacing */
-  --radius-card: 1rem;
+  --radius-card: 1.25rem;
   --radius-button: 0.75rem;
-  --radius-input: 0.5rem;
+  --radius-input: 0.75rem;
   --radius-full: 9999px;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-surface: #1a1a2e;
-    --color-background: #0f0f23;
-  }
 }
 
 /* Base styles */
 body {
   font-family: var(--font-sans);
   background: var(--color-background);
+  color: #e8ddd0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  letter-spacing: -0.011em;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display headings - Outfit */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  font-feature-settings: 'ss01', 'ss02';
+}
+
+/* Accent text - Space Grotesk */
+.font-accent {
+  font-family: var(--font-accent);
+  letter-spacing: -0.02em;
 }
 
 /* Smooth scrolling */
@@ -79,41 +75,105 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-primary-300);
-  border-radius: var(--radius-full);
+  background: #c49535;
+  border-radius: 9999px;
 }
 
-/* Swipe card animation */
-@keyframes card-enter {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+/* Animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-card-enter {
-  animation: card-enter 0.3s ease-out;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Match celebration */
-@keyframes match-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
-.animate-match-pulse {
-  animation: match-pulse 0.6s ease-in-out;
+@keyframes phone-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-12px) rotate(-2deg); }
 }
 
-/* Compatibility ring animation */
-@keyframes score-fill {
-  from { stroke-dashoffset: 283; }
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
 
-.animate-score-fill {
-  animation: score-fill 1.5s ease-out forwards;
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+.animate-float {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+.animate-phone-float {
+  animation: phone-float 5s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Gold gradient text */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #e8c46a 0%, #d4a54a 30%, #f5dca0 50%, #c49535 70%, #e8c46a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(16, 52, 86, 0.5);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(196, 149, 53, 0.15);
+}
+
+.glass-card-light {
+  background: rgba(16, 52, 86, 0.35);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(196, 149, 53, 0.1);
+}
+
+/* Logo blend — feather edges so logo bg merges with nav */
+.logo-blend {
+  mask-image: radial-gradient(circle at center, #000 55%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at center, #000 55%, transparent 80%);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(196, 149, 53, 0.3);
+  color: #fdf0d5;
 }

@@ -1,4 +1,23 @@
 export const colors = {
+  // Core brand palette (matches web)
+  background: '#0C2948',
+  surface: '#103456',
+  surfaceLight: '#1a4268',
+  gold: '#d4a54a',
+  goldLight: '#e8c46a',
+  goldDark: '#b8893a',
+  text: '#e8ddd0',
+  textMuted: 'rgba(232,221,208,0.4)',
+  textWhite: '#ffffff',
+
+  // Semantic
+  success: '#10b981',
+  warning: '#f59e0b',
+  error: '#ef4444',
+  white: '#ffffff',
+  black: '#000000',
+
+  // Extended palette
   primary: {
     50: '#f0edff',
     100: '#ddd6fe',
@@ -20,7 +39,7 @@ export const colors = {
     500: '#ff4757',
     600: '#ed2d3f',
   },
-  gold: {
+  goldScale: {
     50: '#fffbeb',
     100: '#fef3c7',
     200: '#fde68a',
@@ -40,31 +59,18 @@ export const colors = {
     800: '#27272a',
     900: '#18181b',
   },
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  white: '#ffffff',
-  black: '#000000',
 } as const;
 
-export const lightTheme = {
-  background: colors.neutral[50],
-  surface: colors.white,
-  text: colors.neutral[900],
-  textSecondary: colors.neutral[500],
-  border: colors.neutral[200],
-  primary: colors.primary[500],
-  accent: colors.accent[400],
+export const theme = {
+  background: colors.background,
+  surface: colors.surface,
+  surfaceLight: colors.surfaceLight,
+  text: colors.text,
+  textMuted: colors.textMuted,
+  gold: colors.gold,
+  goldLight: colors.goldLight,
+  border: 'rgba(212,165,74,0.2)',
+  borderMuted: 'rgba(232,221,208,0.1)',
 };
 
-export const darkTheme = {
-  background: '#0f0f23',
-  surface: '#1a1a2e',
-  text: colors.white,
-  textSecondary: colors.neutral[400],
-  border: colors.neutral[700],
-  primary: colors.primary[400],
-  accent: colors.accent[400],
-};
-
-export type Theme = typeof lightTheme;
+export type Theme = typeof theme;

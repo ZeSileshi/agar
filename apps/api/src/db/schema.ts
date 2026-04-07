@@ -1,6 +1,6 @@
 import {
   pgTable, uuid, varchar, text, integer, boolean,
-  timestamp, real, jsonb, pgEnum, index, uniqueIndex,
+  timestamp, real, jsonb, pgEnum, index, uniqueIndex, date,
 } from 'drizzle-orm/pg-core';
 
 // Enums
@@ -9,7 +9,8 @@ export const genderPrefEnum = pgEnum('gender_preference', ['male', 'female', 'ev
 export const verificationEnum = pgEnum('verification_status', ['unverified', 'pending', 'verified']);
 export const matchStatusEnum = pgEnum('match_status', ['pending', 'matched', 'unmatched', 'expired']);
 export const matchModeEnum = pgEnum('match_mode', ['self', 'referral']);
-export const swipeActionEnum = pgEnum('swipe_action', ['like', 'pass', 'super_like']);
+export const swipeActionEnum = pgEnum('swipe_action', ['like', 'love', 'gift', 'skip']);
+export const userTypeEnum = pgEnum('user_type', ['direct', 'referrer']);
 export const messageTypeEnum = pgEnum('message_type', ['text', 'image', 'voice', 'icebreaker', 'system']);
 export const messageStatusEnum = pgEnum('message_status', ['sending', 'sent', 'delivered', 'read', 'failed']);
 export const referralStatusEnum = pgEnum('referral_status', ['pending', 'accepted', 'declined', 'expired']);
@@ -25,6 +26,8 @@ export const users = pgTable('users', {
   isActive: boolean('is_active').default(true).notNull(),
   isOnboarded: boolean('is_onboarded').default(false).notNull(),
   verificationStatus: verificationEnum('verification_status').default('unverified').notNull(),
+  userType: userTypeEnum('user_type').default('direct').notNull(),
+  referredBy: uuid('referred_by').references((): any => users.id, { onDelete: 'set null' }),
   lastActiveAt: timestamp('last_active_at', { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -32,6 +35,7 @@ export const users = pgTable('users', {
   index('users_email_idx').on(table.email),
   index('users_phone_idx').on(table.phone),
   index('users_active_idx').on(table.isActive),
+  index('users_type_idx').on(table.userType),
 ]);
 
 // Profiles table
@@ -222,4 +226,48 @@ export const userPreferences = pgTable('user_preferences', {
   darkMode: boolean('dark_mode').default(false).notNull(),
 }, (table) => [
   uniqueIndex('user_prefs_user_id_idx').on(table.userId),
+]);
+
+// Daily view tracking (enforce 10/day limit)
+export const dailyViews = pgTable('daily_views', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  viewedDate: date('viewed_date').notNull(),
+  viewCount: integer('view_count').default(0).notNull(),
+  lastResetAt: timestamp('last_reset_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('daily_views_user_date_idx').on(table.userId, table.viewedDate),
+]);
+
+// Gifts sent between users
+export const gifts = pgTable('gifts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  senderId: uuid('sender_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  receiverId: uuid('receiver_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  giftType: varchar('gift_type', { length: 50 }).notNull(),
+  message: text('message'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('gifts_sender_idx').on(table.senderId),
+  index('gifts_receiver_idx').on(table.receiverId),
+]);
+
+// Referral profiles (text-only profiles created by referrer users)
+export const referralProfiles = pgTable('referral_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  age: integer('age').notNull(),
+  gender: genderEnum('gender').notNull(),
+  bio: text('bio'),
+  personalityDescription: text('personality_description'),
+  interests: jsonb('interests').$type<string[]>().default([]),
+  locationCity: varchar('location_city', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('referral_profiles_created_by_idx').on(table.createdByUserId),
+  index('referral_profiles_active_idx').on(table.isActive),
+  index('referral_profiles_gender_idx').on(table.gender),
 ]);
