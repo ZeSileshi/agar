@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  /* Agar Brand Colors */
+  --color-primary-50: #f0edff;
+  --color-primary-100: #ddd6fe;
+  --color-primary-200: #c4b5fd;
+  --color-primary-300: #a78bfa;
+  --color-primary-400: #8b5cf6;
+  --color-primary-500: #6c5ce7;
+  --color-primary-600: #5b4bd5;
+  --color-primary-700: #4c3fc0;
+  --color-primary-800: #3d329d;
+  --color-primary-900: #2e2578;
+
+  --color-accent-50: #fff1f0;
+  --color-accent-100: #ffe0de;
+  --color-accent-200: #ffc7c4;
+  --color-accent-300: #ff9e99;
+  --color-accent-400: #ff6b6b;
+  --color-accent-500: #ff4757;
+  --color-accent-600: #ed2d3f;
+  --color-accent-700: #c81e30;
+  --color-accent-800: #a51d2e;
+  --color-accent-900: #881e2c;
+
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #ffd93d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+
+  --color-surface: #ffffff;
+  --color-surface-dark: #0f0f23;
+  --color-background: #fafafa;
+  --color-background-dark: #0a0a1a;
+
+  /* Typography */
+  --font-sans: 'Inter', 'Noto Sans Ethiopic', system-ui, -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', system-ui, sans-serif;
+
+  /* Spacing */
+  --radius-card: 1rem;
+  --radius-button: 0.75rem;
+  --radius-input: 0.5rem;
+  --radius-full: 9999px;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #1a1a2e;
+    --color-background: #0f0f23;
+  }
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-sans);
+  background: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-300);
+  border-radius: var(--radius-full);
+}
+
+/* Swipe card animation */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-card-enter {
+  animation: card-enter 0.3s ease-out;
+}
+
+/* Match celebration */
+@keyframes match-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-match-pulse {
+  animation: match-pulse 0.6s ease-in-out;
+}
+
+/* Compatibility ring animation */
+@keyframes score-fill {
+  from { stroke-dashoffset: 283; }
+}
+
+.animate-score-fill {
+  animation: score-fill 1.5s ease-out forwards;
+}

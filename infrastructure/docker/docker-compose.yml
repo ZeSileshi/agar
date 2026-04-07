@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: agar-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: agar_dev
+      POSTGRES_USER: agar
+      POSTGRES_PASSWORD: agar_dev_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../docs/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agar -d agar_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: agar-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ml-service:
+    build:
+      context: ../../services/ml-service
+      dockerfile: Dockerfile
+    container_name: agar-ml-service
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://agar:agar_dev_password@postgres:5432/agar_dev
+      ENVIRONMENT: development
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../services/ml-service/app:/app/app
+
+volumes:
+  pgdata:
+  redisdata:

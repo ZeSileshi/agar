@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Agar - አጋር",
+    "slug": "agar",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#6c5ce7",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.agar.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Agar needs camera access to take profile photos",
+        "NSPhotoLibraryUsageDescription": "Agar needs photo library access to upload profile photos",
+        "NSLocationWhenInUseUsageDescription": "Agar uses your location to find matches near you"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6c5ce7"
+      },
+      "package": "com.agar.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-image-picker",
+      "expo-location"
+    ]
+  }
+}

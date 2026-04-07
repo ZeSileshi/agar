@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@agar/shared/*": ["../../packages/shared/src/*"],
+      "@agar/matching-engine/*": ["../../packages/matching-engine/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

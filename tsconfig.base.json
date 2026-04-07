@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "paths": {
+      "@agar/shared/*": ["./packages/shared/src/*"],
+      "@agar/ui/*": ["./packages/ui/src/*"],
+      "@agar/i18n/*": ["./packages/i18n/src/*"],
+      "@agar/matching-engine/*": ["./packages/matching-engine/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next", ".expo"]
+}
