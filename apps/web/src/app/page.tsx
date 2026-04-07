@@ -150,6 +150,18 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Disclaimer Section */}
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-white/5 bg-white/[0.02] p-8 text-center">
+          <p className="mb-2 text-lg text-white/50">*</p>
+          <p className="text-sm leading-relaxed text-white/40 italic">
+            {lang === 'en' && 'Built with love, math, and a healthy dose of humility. Our compatibility algorithm is smart, but it\'s not a fortune teller. Think of it as a really well-read friend who\'s good with numbers. Be honest with your data — our stars can only align if you give them real coordinates.'}
+            {lang === 'am' && 'በፍቅር፣ ሒሳብ እና ትህትና ተሠርቷል። አልጎሪዝማችን ብልጥ ነው ግን ጠንቋይ አይደለም። ቁጥሮችን በደንብ እንደሚያውቅ ጓደኛ ያስቡት። መረጃዎን በእውነት ያስገቡ — ከዋክብቶቻችን ትክክለኛ ኮኦርዲኔት ሲሰጡ ብቻ ነው የሚገጣጠሙት።'}
+            {lang === 'es' && 'Hecho con amor, matemáticas y una dosis saludable de humildad. Nuestro algoritmo es inteligente, pero no es adivino. Piensa en él como un amigo muy leído que es bueno con los números. Sé honesto con tus datos — nuestras estrellas solo se alinean si les das coordenadas reales.'}
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-white/40">
         <p>&copy; 2026 Agar (አጋር). All rights reserved.</p>

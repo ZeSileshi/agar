@@ -63,7 +63,12 @@
     "interests": "Tus intereses",
     "interestsSubtitle": "Selecciona al menos 3 intereses",
     "astrologyPrefs": "Preferencias de compatibilidad",
-    "astrologyPrefsSubtitle": "¿Qué es importante para ti en una pareja?"
+    "astrologyPrefsSubtitle": "¿Qué es importante para ti en una pareja?",
+    "honestyNote": "Sé honesto — nuestros algoritmos funcionan mejor con datos reales. ¡Si metes basura, sale basura!",
+    "honestyNoteSubtitle": "Cuanto más precisa sea tu info, mejores serán tus matches. Sin presión... bueno, un poquito.",
+    "birthDataDisclaimer": "Tus datos de nacimiento nos ayudan a calcular la compatibilidad astrológica. ¡Sé lo más preciso posible!",
+    "palmistryUploadNote": "Sube una foto clara de tu palma para el análisis de quiromancia. Solo tu mano — la mano de tu primo no ayudará a tu vida amorosa.",
+    "palmistryHowTo": "Usa buena iluminación, extiende los dedos naturalmente y fotografía tu mano dominante."
   },
   "discovery": {
     "title": "Descubrir",
@@ -105,7 +110,10 @@
     "insights": "Ideas de compatibilidad",
     "strengths": "Fortalezas",
     "challenges": "Áreas de crecimiento",
-    "advice": "Consejo de relación"
+    "advice": "Consejo de relación",
+    "disclaimer": "Hablemos claro: esto es la mejor estimación de nuestro algoritmo, no el destino escrito en piedra. Somos bastante listos, pero no somos Cupido. Usa estos puntajes como un tema de conversación divertido, no como una decisión de vida.",
+    "disclaimerShort": "Impulsado por algoritmos, no por el destino.",
+    "palmistryDisclaimer": "El análisis de quiromancia es experimental y solo por diversión. Las líneas de tu palma son geniales, pero no son una bola de cristal."
   },
   "profile": {
     "title": "Perfil",
@@ -173,6 +181,13 @@
     "termsOfService": "Términos de servicio",
     "privacyPolicy": "Política de privacidad",
     "version": "Versión {{version}}"
+  },
+  "disclaimers": {
+    "general": "Aviso: Nuestros puntajes de compatibilidad son generados por algoritmos que construimos con amor (y cafeína). Son divertidos, perspicaces y sorprendentemente precisos — pero no son perfectos. Ningún algoritmo puede capturar completamente la magia entre dos personas. Confía en tu instinto, no solo en nuestros números.",
+    "honesty": "Por favor sé honesto al ingresar tu información. Nuestros algoritmos solo pueden hacer magia con datos reales. Si mientes sobre tu hora de nacimiento, eso es entre tú y las estrellas.",
+    "palmistry": "Las funciones de quiromancia son experimentales y se ofrecen por entretenimiento. Sube una foto clara de tu propia palma. Prometemos no juzgar tu línea de la vida.",
+    "notPerfect": "Hecho con amor, matemáticas y una dosis saludable de humildad. Nuestro algoritmo es inteligente, pero no es adivino. Piensa en él como un amigo muy leído que es bueno con los números.",
+    "dataPrivacy": "Tus datos de nacimiento e imágenes de palma están encriptados y se usan solo para cálculos de compatibilidad. Tomamos tus datos cósmicos tan en serio como tu privacidad."
   },
   "errors": {
     "networkError": "Error de red. Verifica tu conexión.",

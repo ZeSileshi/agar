@@ -184,6 +184,12 @@ export default function CompatibilityScreen() {
           </View>
         ))}
       </View>
+
+      {/* Disclaimer — friendly but honest */}
+      <View style={styles.disclaimerCard}>
+        <Text style={styles.disclaimerEmoji}>*</Text>
+        <Text style={styles.disclaimerText}>{t('compatibility.disclaimer')}</Text>
+      </View>
     </ScrollView>
   );
 }
@@ -210,4 +216,7 @@ const styles = StyleSheet.create({
   insightText: { color: 'rgba(255,255,255,0.8)', fontSize: 15, flex: 1 },
   adviceCard: { backgroundColor: 'rgba(108,92,231,0.15)', borderRadius: 12, padding: 16, borderLeftWidth: 3, borderLeftColor: colors.primary[500] },
   adviceText: { color: 'rgba(255,255,255,0.8)', fontSize: 15, lineHeight: 22 },
+  disclaimerCard: { flexDirection: 'row', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  disclaimerEmoji: { color: 'rgba(255,255,255,0.3)', fontSize: 14, marginTop: 2 },
+  disclaimerText: { color: 'rgba(255,255,255,0.4)', fontSize: 12, lineHeight: 18, flex: 1, fontStyle: 'italic' },
 });
