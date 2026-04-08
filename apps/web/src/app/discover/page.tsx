@@ -11,6 +11,7 @@ import {
   getAstrologyProfile,
   sunSignCompatibility,
   chineseZodiacCompatibility,
+  computeOverallCompatibility,
 } from '@/lib/astrology';
 import AppNav from '@/components/AppNav';
 
@@ -413,10 +414,10 @@ export default function DiscoverPage() {
       const swipedIds = (swipedData ?? []).map((s: { target_id: string }) => s.target_id);
       swipedIds.push(userId); // exclude self
 
-      // 3. Get current user's profile for gender preference
+      // 3. Get current user's profile for gender preference + scoring data
       const { data: myProfile } = await supabase
         .from('profiles')
-        .select('gender, gender_preference')
+        .select('gender, gender_preference, date_of_birth, interests')
         .eq('user_id', userId)
         .single();
 
@@ -485,43 +486,48 @@ export default function DiscoverPage() {
         photoMap.set(p.user_id, p.url);
       });
 
-      // 6. Get compatibility scores
-      const { data: scoresData } = await supabase
-        .from('compatibility_scores')
-        .select('user2_id, overall_score')
-        .eq('user1_id', userId)
-        .in('user2_id', candidateUserIds);
+      // 6. Compute compatibility scores on the fly
+      const myDob = myProfile?.date_of_birth ?? myDateOfBirth ?? '';
+      const myInterests: string[] = (myProfile as any)?.interests ?? [];
+
+      // Check if current user has a palm scan
+      let myHasPalm = false;
+      try {
+        const { data: palmFiles } = await supabase.storage.from('palms').list(userId, { limit: 1 });
+        myHasPalm = (palmFiles ?? []).length > 0;
+      } catch { /* ignore */ }
 
       const scoreMap = new Map<string, number>();
-      (scoresData ?? []).forEach((s: { user2_id: string; overall_score: number }) => {
-        scoreMap.set(s.user2_id, s.overall_score);
-      });
+      const scoresToStore: Array<{ user1_id: string; user2_id: string; overall_score: number; western_score: number; chinese_score: number; profile_score: number; palmistry_score: number; confidence: number }> = [];
 
-      // Also check reverse direction
-      const { data: reverseScoresData } = await supabase
-        .from('compatibility_scores')
-        .select('user1_id, overall_score')
-        .in('user1_id', candidateUserIds)
-        .eq('user2_id', userId);
+      for (const p of (candidateProfiles ?? [])) {
+        const theirDob = p.date_of_birth ?? '';
+        const theirInterests: string[] = p.interests ?? [];
+        const result = computeOverallCompatibility(myDob, theirDob, myInterests, theirInterests, myHasPalm, false);
+        scoreMap.set(p.user_id as string, result.overall);
 
-      (reverseScoresData ?? []).forEach((s: { user1_id: string; overall_score: number }) => {
-        if (!scoreMap.has(s.user1_id)) {
-          scoreMap.set(s.user1_id, s.overall_score);
-        }
-      });
+        const sorted = [userId, p.user_id as string].sort();
+        const u1 = sorted[0]!;
+        const u2 = sorted[1]!;
+        scoresToStore.push({
+          user1_id: u1,
+          user2_id: u2,
+          overall_score: result.overall,
+          western_score: result.western,
+          chinese_score: result.chinese,
+          profile_score: result.profile,
+          palmistry_score: result.palmistry,
+          confidence: myDob && theirDob ? 0.7 : 0.3,
+        });
+      }
+
+      // Store scores in background (don't await / block UI)
+      if (scoresToStore.length > 0) {
+        supabase.from('compatibility_scores').upsert(scoresToStore, { onConflict: 'user1_id,user2_id', ignoreDuplicates: false }).then(() => {});
+      }
 
       // 7. Assemble profile cards, sorted by compatibility score desc
-      const cards: ProfileCard[] = candidateProfiles.map((p: {
-        id: string;
-        user_id: string;
-        first_name: string;
-        display_name: string;
-        date_of_birth: string;
-        gender: string;
-        bio: string | null;
-        interests: string[];
-        location_city: string | null;
-      }) => ({
+      const cards: ProfileCard[] = (candidateProfiles ?? []).map((p: any) => ({
         id: p.id,
         user_id: p.user_id,
         first_name: p.first_name,
@@ -531,8 +537,8 @@ export default function DiscoverPage() {
         bio: p.bio,
         interests: p.interests ?? [],
         location_city: p.location_city,
-        photo_url: photoMap.get(p.user_id) ?? null,
-        compatibility_score: scoreMap.get(p.user_id) ?? null,
+        photo_url: photoMap.get(p.user_id as string) ?? null,
+        compatibility_score: scoreMap.get(p.user_id as string) ?? null,
       }));
 
       cards.sort((a, b) => {

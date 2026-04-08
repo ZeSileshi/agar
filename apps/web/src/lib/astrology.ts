@@ -156,6 +156,61 @@ export interface AstrologyProfile {
   chineseElement: string;
 }
 
+/* ---------- Overall Compatibility Score ---------- */
+
+export function computeOverallCompatibility(
+  dob1: string,
+  dob2: string,
+  interests1: string[] = [],
+  interests2: string[] = [],
+  hasPalm1 = false,
+  hasPalm2 = false,
+): {
+  overall: number;
+  western: number;
+  chinese: number;
+  profile: number;
+  palmistry: number;
+  breakdown: Record<string, number>;
+} {
+  const p1 = getAstrologyProfile(dob1);
+  const p2 = getAstrologyProfile(dob2);
+
+  // Western astrology (sun sign element compatibility)
+  const western = p1 && p2 ? sunSignCompatibility(p1.sunSign, p2.sunSign) : 60;
+
+  // Chinese zodiac compatibility
+  const chinese = p1 && p2 ? chineseZodiacCompatibility(p1.chineseAnimal, p2.chineseAnimal) : 60;
+
+  // Profile similarity (shared interests)
+  let profile = 50;
+  if (interests1.length > 0 && interests2.length > 0) {
+    const set1 = new Set(interests1.map((i) => i.toLowerCase()));
+    const shared = interests2.filter((i) => set1.has(i.toLowerCase())).length;
+    const total = new Set([...interests1, ...interests2].map((i) => i.toLowerCase())).size;
+    profile = total > 0 ? Math.round((shared / total) * 100) : 50;
+    profile = Math.max(30, Math.min(95, profile)); // clamp
+  }
+
+  // Palmistry bonus (both users have palm scans = +5 bonus to overall)
+  const palmistry = hasPalm1 && hasPalm2 ? 75 : hasPalm1 || hasPalm2 ? 60 : 50;
+
+  // Weighted average
+  // Weights: western 25%, chinese 15%, profile 45%, palmistry 15%
+  const overall = Math.round(
+    western * 0.25 + chinese * 0.15 + profile * 0.45 + palmistry * 0.15
+  );
+
+  return {
+    overall: Math.max(20, Math.min(99, overall)),
+    western,
+    chinese,
+    profile,
+    palmistry,
+    breakdown: { western, chinese, profile, palmistry },
+  };
+}
+
 export function getAstrologyProfile(dateOfBirth: string): AstrologyProfile | null {
   if (!dateOfBirth) return null;
   const d = new Date(dateOfBirth);
