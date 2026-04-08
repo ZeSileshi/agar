@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
+import AppNav from '@/components/AppNav';
 
 interface UserData {
   email: string;
@@ -55,15 +56,18 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-navy-950 text-gold-100">
-      {/* Nav */}
-      <nav className="fixed top-0 z-50 w-full border-b border-gold-400/10 bg-navy-950/80 backdrop-blur-xl">
+      <AppNav />
+
+      {/* Top bar */}
+      <nav className="fixed top-0 z-50 w-full border-b border-gold-400/10 bg-navy-950/80 backdrop-blur-xl md:ml-20 lg:ml-56 md:w-[calc(100%-5rem)] lg:w-[calc(100%-14rem)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 md:hidden">
             <Image src="/logo.png" alt="Agar" width={44} height={44} />
             <span className="font-display text-xl font-bold tracking-tight text-gold-100">
               Agar <span className="text-gold-400/60 font-normal text-sm ml-0.5">አጋር</span>
             </span>
           </Link>
+          <div className="hidden md:block" />
           <div className="flex items-center gap-4">
             <span className="text-sm text-gold-200/50">{user?.email}</span>
             <button
@@ -77,7 +81,7 @@ export default function DashboardPage() {
       </nav>
 
       {/* Main */}
-      <main className="pt-24 pb-16 px-6">
+      <main className="pt-24 pb-24 md:pb-16 px-6 md:ml-20 lg:ml-56">
         <div className="mx-auto max-w-4xl">
           {/* Welcome */}
           <div className="mb-10">
@@ -91,7 +95,7 @@ export default function DashboardPage() {
 
           {/* Cards */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-7">
+            <Link href="/profile" className="rounded-2xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-7 hover:border-gold-400/25 hover:bg-white/[0.05] transition-all">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl text-gold-400 bg-gold-400/10">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -99,17 +103,17 @@ export default function DashboardPage() {
               </div>
               <h3 className="font-display text-lg font-bold text-gold-50 mb-2">Complete Profile</h3>
               <p className="text-gold-200/40 text-sm leading-relaxed">Add your birth details, photos, and preferences to get matched.</p>
-            </div>
+            </Link>
 
-            <div className="rounded-2xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-7">
+            <Link href="/discover" className="rounded-2xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-7 hover:border-gold-400/25 hover:bg-white/[0.05] transition-all group">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl text-rose-400 bg-rose-400/10">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                 </svg>
               </div>
-              <h3 className="font-display text-lg font-bold text-gold-50 mb-2">Daily Matches</h3>
+              <h3 className="font-display text-lg font-bold text-gold-50 mb-2 group-hover:text-gold-300 transition-colors">Discover Matches</h3>
               <p className="text-gold-200/40 text-sm leading-relaxed">10 curated matches every day based on your compatibility.</p>
-            </div>
+            </Link>
 
             <div className="rounded-2xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-7">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl text-emerald-400 bg-emerald-400/10">

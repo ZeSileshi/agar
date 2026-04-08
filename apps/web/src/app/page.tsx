@@ -767,7 +767,7 @@ export default function LandingPage() {
               placeholder={t.cta.emailPlaceholder}
               className="w-full sm:flex-1 rounded-full border border-gold-400/15 bg-navy-800/60 px-6 py-3.5 text-gold-100 placeholder-gold-200/25 outline-none focus:border-gold-400/40 focus:ring-2 focus:ring-gold-400/10 transition-all"
             />
-            <Link href="/auth/signup" className="w-full sm:w-auto whitespace-nowrap text-center rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-8 py-3.5 font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
+            <Link href={`/auth/signup${email ? `?email=${encodeURIComponent(email)}` : ''}`} className="w-full sm:w-auto whitespace-nowrap text-center rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-8 py-3.5 font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
               {t.cta.button}
             </Link>
           </div>
@@ -789,11 +789,14 @@ export default function LandingPage() {
             </div>
 
             <div className="flex items-center gap-6">
-              {t.footer.links.map((link, i) => (
-                <a key={i} href="#" className="text-sm text-gold-200/30 hover:text-gold-300 transition-colors">
-                  {link}
-                </a>
-              ))}
+              {t.footer.links.map((link, i) => {
+                const hrefs = ['#how', '#', '#', 'mailto:support@agar.app'];
+                return (
+                  <a key={i} href={hrefs[i]} className="text-sm text-gold-200/30 hover:text-gold-300 transition-colors">
+                    {link}
+                  </a>
+                );
+              })}
             </div>
           </div>
 

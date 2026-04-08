@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,37 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+
+  useEffect(() => {
+    getSupabase().auth.getUser().then(({ data }) => {
+      if (data.user) {
+        router.replace('/dashboard');
+      }
+    });
+  }, [router]);
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotError('');
+    setForgotLoading(true);
+    try {
+      const { error: resetError } = await getSupabase().auth.resetPasswordForEmail(forgotEmail);
+      if (resetError) {
+        setForgotError(resetError.message);
+        return;
+      }
+      setForgotSuccess(true);
+    } catch {
+      setForgotError('An unexpected error occurred. Please try again.');
+    } finally {
+      setForgotLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,7 +93,7 @@ export default function LoginPage() {
       <main className="relative z-10 flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           {/* Card */}
-          <div className="rounded-3xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-8 md:p-10">
+          <div className="relative rounded-3xl border border-gold-400/15 bg-white/[0.03] backdrop-blur-xl p-8 md:p-10">
             {/* Heading */}
             <div className="text-center mb-8">
               <h1 className="font-display text-3xl font-bold tracking-tight text-gold-50">
@@ -107,6 +138,7 @@ export default function LoginPage() {
                   </label>
                   <button
                     type="button"
+                    onClick={() => { setShowForgotPassword(true); setForgotEmail(email); }}
                     className="text-xs text-gold-400/60 hover:text-gold-400 transition-colors"
                     tabIndex={-1}
                   >
@@ -182,6 +214,67 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
+
+          {/* Forgot password overlay */}
+          {showForgotPassword && (
+            <div className="absolute inset-0 flex items-center justify-center bg-navy-950/80 backdrop-blur-sm rounded-3xl">
+              <div className="w-full max-w-sm p-8">
+                {forgotSuccess ? (
+                  <div className="text-center">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gold-400/10 border border-gold-400/20">
+                      <svg className="w-8 h-8 text-gold-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                      </svg>
+                    </div>
+                    <h3 className="font-display text-xl font-bold text-gold-50 mb-3">Check your email</h3>
+                    <p className="text-gold-200/40 text-sm mb-6">Check your email for a password reset link.</p>
+                    <button
+                      type="button"
+                      onClick={() => { setShowForgotPassword(false); setForgotSuccess(false); setForgotEmail(''); }}
+                      className="text-sm font-medium text-gold-400 hover:text-gold-300 transition-colors"
+                    >
+                      Back to sign in
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="font-display text-xl font-bold text-gold-50 mb-2 text-center">Reset password</h3>
+                    <p className="text-gold-200/40 text-sm mb-6 text-center">Enter your email and we will send you a reset link.</p>
+                    {forgotError && (
+                      <div className="mb-4 rounded-xl border border-rose-400/20 bg-rose-400/5 px-4 py-3 text-sm text-rose-300" role="alert">
+                        {forgotError}
+                      </div>
+                    )}
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                      <input
+                        type="email"
+                        required
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        className="w-full rounded-xl border border-gold-400/15 bg-navy-800/60 px-4 py-3 text-gold-100 placeholder-gold-200/25 outline-none focus:border-gold-400/40 focus:ring-2 focus:ring-gold-400/10 transition-all"
+                      />
+                      <button
+                        type="submit"
+                        disabled={forgotLoading}
+                        className="w-full rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 px-6 py-3 text-base font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {forgotLoading ? 'Sending...' : 'Send reset link'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowForgotPassword(false); setForgotError(''); setForgotEmail(''); }}
+                        className="w-full text-center text-sm text-gold-200/40 hover:text-gold-200/70 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
