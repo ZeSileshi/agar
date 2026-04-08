@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 /* ------------------------------------------------------------------ */
 /*  Trilingual content                                                 */
@@ -528,12 +529,12 @@ export default function LandingPage() {
                 </button>
               ))}
             </div>
-            <button className="text-sm font-medium text-gold-200/60 hover:text-gold-200 transition-colors">
+            <Link href="/auth/login" className="text-sm font-medium text-gold-200/60 hover:text-gold-200 transition-colors">
               {t.nav.signin}
-            </button>
-            <button className="rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-5 py-2 text-sm font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
+            </Link>
+            <Link href="/auth/signup" className="rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-5 py-2 text-sm font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
               {t.nav.download}
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -584,12 +585,12 @@ export default function LandingPage() {
                 className="animate-fade-up mt-8 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start"
                 style={{ animationDelay: '0.24s', animationFillMode: 'backwards' }}
               >
-                <button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-8 py-3.5 text-base font-semibold text-navy-950 shadow-lg shadow-gold-400/20 transition-all hover:from-gold-300 hover:to-gold-400 hover:shadow-xl hover:shadow-gold-400/25 active:scale-[0.98]">
+                <Link href="/auth/signup" className="w-full sm:w-auto text-center rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-8 py-3.5 text-base font-semibold text-navy-950 shadow-lg shadow-gold-400/20 transition-all hover:from-gold-300 hover:to-gold-400 hover:shadow-xl hover:shadow-gold-400/25 active:scale-[0.98]">
                   {t.hero.cta}
-                </button>
-                <button className="w-full sm:w-auto rounded-full border border-gold-400/20 bg-gold-400/5 px-8 py-3.5 text-base font-medium text-gold-200 transition-all hover:bg-gold-400/10 hover:border-gold-400/30 active:scale-[0.98]">
+                </Link>
+                <a href="#how" className="w-full sm:w-auto text-center rounded-full border border-gold-400/20 bg-gold-400/5 px-8 py-3.5 text-base font-medium text-gold-200 transition-all hover:bg-gold-400/10 hover:border-gold-400/30 active:scale-[0.98]">
                   {t.hero.ctaSecondary}
-                </button>
+                </a>
               </div>
 
               {/* Store badges */}
@@ -766,9 +767,9 @@ export default function LandingPage() {
               placeholder={t.cta.emailPlaceholder}
               className="w-full sm:flex-1 rounded-full border border-gold-400/15 bg-navy-800/60 px-6 py-3.5 text-gold-100 placeholder-gold-200/25 outline-none focus:border-gold-400/40 focus:ring-2 focus:ring-gold-400/10 transition-all"
             />
-            <button className="w-full sm:w-auto whitespace-nowrap rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-8 py-3.5 font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
+            <Link href="/auth/signup" className="w-full sm:w-auto whitespace-nowrap text-center rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-8 py-3.5 font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
               {t.cta.button}
-            </button>
+            </Link>
           </div>
         </div>
       </section>
