@@ -34,7 +34,8 @@
       "expo-router",
       "expo-image-picker",
       "expo-location",
-      "expo-font"
+      "expo-font",
+      "expo-camera"
     ]
   }
 }

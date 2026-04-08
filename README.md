@@ -7,7 +7,7 @@ A mobile-first matchmaking platform combining modern dating with cultural compat
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + npm workspaces |
-| Mobile | React Native (Expo SDK 52) |
+| Mobile | React Native 0.81 (Expo SDK 54, React 19) |
 | Web | Next.js 15, React 19, Tailwind CSS v4 |
 | API | Express 5, Drizzle ORM, PostgreSQL, Redis |
 | Matching | TypeScript (Western/Vedic/Chinese astrology + palmistry + behavioral AI) |

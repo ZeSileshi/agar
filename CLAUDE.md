@@ -6,7 +6,7 @@ Agar is an AI-powered matchmaking platform combining modern dating with cultural
 ## Tech Stack
 - **Monorepo**: Turborepo with npm workspaces
 - **Web**: Next.js 15, React 19, Tailwind CSS v4
-- **Mobile**: React Native (Expo SDK 52)
+- **Mobile**: React Native 0.81 (Expo SDK 54)
 - **API**: Express 5, Drizzle ORM, PostgreSQL, Redis
 - **Matching Engine**: TypeScript (Western/Vedic/Chinese astrology + behavioral AI)
 - **Real-time**: Socket.io
