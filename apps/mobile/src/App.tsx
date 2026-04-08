@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { StatusBar, View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StatusBar, View, StyleSheet, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
@@ -36,7 +36,7 @@ import DiscoveryScreen from './screens/DiscoveryScreen';
 initI18n('en');
 
 // Keep splash visible while loading fonts
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Screen =
   | 'welcome'
@@ -50,8 +50,9 @@ type Screen =
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
+  const [appReady, setAppReady] = useState(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     DMSans_400Regular,
     DMSans_500Medium,
     DMSans_600SemiBold,
@@ -64,18 +65,16 @@ export default function App() {
     NotoSansEthiopic: require('./assets/fonts/NotoSansEthiopic.ttf'),
   });
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
-      await SplashScreen.hideAsync();
+  // Proceed when fonts are loaded OR if they error (use system fonts as fallback)
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      setAppReady(true);
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.gold} size="large" />
-      </View>
-    );
+  if (!appReady) {
+    return null; // Splash screen is still visible
   }
 
   const renderScreen = () => {
@@ -127,7 +126,7 @@ export default function App() {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         {renderScreen()}
@@ -135,12 +134,3 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
