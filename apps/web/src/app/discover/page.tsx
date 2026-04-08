@@ -304,6 +304,7 @@ export default function DiscoverPage() {
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | 'up' | null>(null);
   const [dailyCount, setDailyCount] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+  const [userType, setUserType] = useState<'direct' | 'referrer'>('direct');
 
   // Match modal state
   const [matchModal, setMatchModal] = useState<{
@@ -321,6 +322,14 @@ export default function DiscoverPage() {
           return;
         }
         setUserId(user.id);
+        // Get user type from metadata or users table
+        const uType = user.user_metadata?.user_type as 'direct' | 'referrer' | undefined;
+        if (uType) {
+          setUserType(uType);
+        } else {
+          const { data: userData } = await supabase.from('users').select('user_type').eq('id', user.id).single();
+          if (userData?.user_type) setUserType(userData.user_type);
+        }
       } catch {
         router.push('/auth/login');
       }
@@ -375,19 +384,45 @@ export default function DiscoverPage() {
         .eq('user_id', userId)
         .single();
 
-      // 4. Build query for candidate profiles
-      let query = supabase
-        .from('profiles')
-        .select('id, user_id, first_name, display_name, date_of_birth, gender, bio, interests, location_city')
-        .not('user_id', 'in', `(${swipedIds.join(',')})`)
-        .limit(DAILY_LIMIT - currentCount);
+      // 4. Build query based on user type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let candidateProfiles: any[] | null = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let error: any = null;
 
-      // Apply gender preference filter
-      if (myProfile?.gender_preference && myProfile.gender_preference !== 'everyone') {
-        query = query.eq('gender', myProfile.gender_preference);
+      if (userType === 'referrer') {
+        // Referrer users see referral_profiles from other referrers
+        const { data, error: err } = await supabase
+          .from('referral_profiles')
+          .select('id, created_by_user_id, first_name, age, gender, bio, interests, location_city')
+          .not('created_by_user_id', 'in', `(${swipedIds.join(',')})`)
+          .eq('is_active', true)
+          .limit(DAILY_LIMIT - currentCount);
+        // Map to same shape as profiles
+        candidateProfiles = (data ?? []).map((rp: any) => ({
+          ...rp,
+          user_id: rp.created_by_user_id,
+          display_name: rp.first_name,
+          date_of_birth: rp.age ? new Date(Date.now() - (rp.age as number) * 365.25 * 24 * 60 * 60 * 1000).toISOString() : null,
+        }));
+        error = err;
+      } else {
+        // Direct users see other direct user profiles
+        let query = supabase
+          .from('profiles')
+          .select('id, user_id, first_name, display_name, date_of_birth, gender, bio, interests, location_city')
+          .not('user_id', 'in', `(${swipedIds.join(',')})`)
+          .limit(DAILY_LIMIT - currentCount);
+
+        // Apply gender preference filter
+        if (myProfile?.gender_preference && myProfile.gender_preference !== 'everyone') {
+          query = query.eq('gender', myProfile.gender_preference);
+        }
+
+        const { data, error: err } = await query;
+        candidateProfiles = data;
+        error = err;
       }
-
-      const { data: candidateProfiles, error } = await query;
 
       if (error) {
         console.error('Error loading profiles:', error);
@@ -402,7 +437,7 @@ export default function DiscoverPage() {
       }
 
       // 5. Get primary photos for candidates
-      const candidateUserIds = candidateProfiles.map((p: { user_id: string }) => p.user_id);
+      const candidateUserIds = candidateProfiles.map((p) => p.user_id as string);
       const { data: photosData } = await supabase
         .from('photos')
         .select('user_id, url')

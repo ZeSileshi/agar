@@ -41,8 +41,8 @@ interface PhotoSlot {
   uploading?: boolean;
 }
 
-const STEPS = ['Basic Info', 'Birth Details', 'Photos', 'Preferences'] as const;
-const TOTAL_STEPS = STEPS.length;
+const STEPS_DIRECT = ['Basic Info', 'Birth Details', 'Photos', 'Preferences'] as const;
+const STEPS_REFERRER = ['Basic Info', 'Photos', 'Preferences'] as const;
 
 const DEFAULT_PROFILE: ProfileData = {
   first_name: '',
@@ -133,6 +133,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [step, setStep] = useState(0);
+  const [userType, setUserType] = useState<'direct' | 'referrer'>('direct');
+  const STEPS = userType === 'referrer' ? STEPS_REFERRER : STEPS_DIRECT;
+  const TOTAL_STEPS = STEPS.length;
 
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [birth, setBirth] = useState<BirthDetails>(DEFAULT_BIRTH);
@@ -153,6 +156,10 @@ export default function ProfilePage() {
           return;
         }
         setUserId(user.id);
+
+        // Get user type
+        const uType = user.user_metadata?.user_type as 'direct' | 'referrer' | undefined;
+        if (uType) setUserType(uType);
 
         // Pre-fill from auth metadata
         const meta = user.user_metadata ?? {};
@@ -523,7 +530,7 @@ export default function ProfilePage() {
             id={`step-panel-${step}`}
           >
             {/* Step 1: Basic Info */}
-            {step === 0 && (
+            {STEPS[step] === 'Basic Info' && (
               <div className="space-y-5">
                 <h2 className="font-display text-xl font-bold text-gold-50 mb-1">
                   Basic Information
@@ -674,7 +681,7 @@ export default function ProfilePage() {
             )}
 
             {/* Step 2: Birth Details */}
-            {step === 1 && (
+            {STEPS[step] === 'Birth Details' && (
               <div className="space-y-5">
                 <h2 className="font-display text-xl font-bold text-gold-50 mb-1">
                   Birth Details
@@ -740,7 +747,7 @@ export default function ProfilePage() {
             )}
 
             {/* Step 3: Photos */}
-            {step === 2 && (
+            {STEPS[step] === 'Photos' && (
               <div className="space-y-5">
                 <h2 className="font-display text-xl font-bold text-gold-50 mb-1">
                   Photos
@@ -856,7 +863,7 @@ export default function ProfilePage() {
             )}
 
             {/* Step 4: Preferences */}
-            {step === 3 && (
+            {STEPS[step] === 'Preferences' && (
               <div className="space-y-5">
                 <h2 className="font-display text-xl font-bold text-gold-50 mb-1">
                   Matching Preferences
