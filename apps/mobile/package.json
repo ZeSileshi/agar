@@ -2,12 +2,12 @@
   "name": "@agar/mobile",
   "version": "0.1.0",
   "private": true,
-  "main": "src/App.tsx",
+  "main": "index.js",
   "scripts": {
-    "dev": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "build": "expo export",
+    "dev": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo start",
+    "android": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo start --android",
+    "ios": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo start --ios",
+    "build": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo export",
     "lint": "eslint src/",
     "clean": "rm -rf .expo dist .turbo"
   },
