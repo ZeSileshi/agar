@@ -5,9 +5,14 @@ import { fontFamily } from '../theme/typography';
 
 interface LogoHeaderProps {
   size?: 'small' | 'large';
+  showText?: boolean;
 }
 
-export default function LogoHeader({ size = 'small' }: LogoHeaderProps) {
+/**
+ * Consistent logo matching the web nav:
+ *  [logo.png] Agar አጋር
+ */
+export default function LogoHeader({ size = 'small', showText = true }: LogoHeaderProps) {
   const isLarge = size === 'large';
 
   return (
@@ -17,10 +22,10 @@ export default function LogoHeader({ size = 'small' }: LogoHeaderProps) {
         style={isLarge ? styles.logoLarge : styles.logoSmall}
         resizeMode="contain"
       />
-      {isLarge && (
+      {showText && (
         <>
-          <Text style={styles.brandName}>Agar</Text>
-          <Text style={styles.brandAmharic}>አጋር</Text>
+          <Text style={isLarge ? styles.brandNameLarge : styles.brandName}>Agar</Text>
+          <Text style={isLarge ? styles.amharicLarge : styles.amharic}>አጋር</Text>
         </>
       )}
     </View>
@@ -29,30 +34,46 @@ export default function LogoHeader({ size = 'small' }: LogoHeaderProps) {
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
+  // Small — for screen headers (matches web nav)
   logoSmall: {
     width: 36,
     height: 36,
     borderRadius: 10,
   },
-  logoLarge: {
-    width: 120,
-    height: 120,
-    borderRadius: 28,
-    marginBottom: 16,
-  },
   brandName: {
     fontFamily: fontFamily.displayBold,
-    fontSize: 38,
+    fontSize: 18,
     color: colors.goldLight,
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
-  brandAmharic: {
+  amharic: {
     fontFamily: fontFamily.ethiopic,
-    fontSize: 20,
+    fontSize: 12,
     color: colors.gold,
-    marginTop: 2,
-    opacity: 0.7,
+    opacity: 0.6,
+    marginLeft: 2,
+  },
+  // Large — for splash/welcome
+  logoLarge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+  },
+  brandNameLarge: {
+    fontFamily: fontFamily.displayBold,
+    fontSize: 21,
+    color: colors.goldLight,
+    letterSpacing: -0.5,
+  },
+  amharicLarge: {
+    fontFamily: fontFamily.ethiopic,
+    fontSize: 14,
+    color: colors.gold,
+    opacity: 0.6,
+    marginLeft: 2,
   },
 });

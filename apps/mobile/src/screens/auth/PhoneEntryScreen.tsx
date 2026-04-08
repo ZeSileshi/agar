@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,10 +15,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/auth-store';
+import LogoHeader from '../../components/LogoHeader';
 
 const COUNTRY_CODES = [
-  { code: '+251', country: 'Ethiopia', flag: '🇪🇹' },
   { code: '+1', country: 'United States', flag: '🇺🇸' },
+  { code: '+251', country: 'Ethiopia', flag: '🇪🇹' },
   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
   { code: '+971', country: 'UAE', flag: '🇦🇪' },
   { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
@@ -86,15 +86,11 @@ export default function PhoneEntryScreen({ onContinue }: PhoneEntryScreenProps) 
         >
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <Image
-              source={require('../../../assets/icon.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <LogoHeader size="small" />
           </View>
 
           {/* Heading */}
-          <Text style={styles.heading}>Welcome to Agar</Text>
+          <Text style={styles.heading}>What's your number?</Text>
           <Text style={styles.subheading}>
             Enter your phone number to get started
           </Text>
@@ -202,13 +198,8 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   logoContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
+    alignItems: 'flex-start',
+    marginBottom: 24,
   },
   heading: {
     fontSize: 28,
