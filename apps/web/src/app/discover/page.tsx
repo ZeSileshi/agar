@@ -7,6 +7,11 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Heart, Star, MapPin, User, Compass } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
+import {
+  getAstrologyProfile,
+  sunSignCompatibility,
+  chineseZodiacCompatibility,
+} from '@/lib/astrology';
 import AppNav from '@/components/AppNav';
 
 /* ---------- types ---------- */
@@ -120,9 +125,11 @@ function MatchModal({
 function ProfileCardView({
   profile,
   direction,
+  myDateOfBirth,
 }: {
   profile: ProfileCard;
   direction: 'left' | 'right' | 'up' | null;
+  myDateOfBirth?: string | null;
 }) {
   const age = calculateAge(profile.date_of_birth);
   const variants = {
@@ -216,6 +223,28 @@ function ProfileCardView({
                 )}
               </div>
             )}
+
+            {/* Astrology compatibility breakdown */}
+            {(() => {
+              const myAstro = myDateOfBirth ? getAstrologyProfile(myDateOfBirth) : null;
+              const theirAstro = profile.date_of_birth ? getAstrologyProfile(profile.date_of_birth) : null;
+              if (!myAstro || !theirAstro) return null;
+              const sunCompat = sunSignCompatibility(myAstro.sunSign, theirAstro.sunSign);
+              const chineseCompat = chineseZodiacCompatibility(myAstro.chineseAnimal, theirAstro.chineseAnimal);
+              return (
+                <div className="space-y-1 pt-1">
+                  <p className="text-[11px] text-gold-200/30 font-medium uppercase tracking-wider">Astrology</p>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] text-gold-200/50">
+                      {myAstro.sunSignSymbol} {myAstro.sunSign} &harr; {theirAstro.sunSignSymbol} {theirAstro.sunSign} &mdash; {sunCompat}%
+                    </span>
+                    <span className="text-[11px] text-gold-200/50">
+                      {myAstro.chineseAnimalEmoji} {myAstro.chineseAnimal} &harr; {theirAstro.chineseAnimalEmoji} {theirAstro.chineseAnimal} &mdash; {chineseCompat}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -305,6 +334,7 @@ export default function DiscoverPage() {
   const [dailyCount, setDailyCount] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
   const [userType, setUserType] = useState<'direct' | 'referrer'>('direct');
+  const [myDateOfBirth, setMyDateOfBirth] = useState<string | null>(null);
 
   // Match modal state
   const [matchModal, setMatchModal] = useState<{
@@ -329,6 +359,12 @@ export default function DiscoverPage() {
         } else {
           const { data: userData } = await supabase.from('users').select('user_type').eq('id', user.id).single();
           if (userData?.user_type) setUserType(userData.user_type);
+        }
+
+        // Load user's date_of_birth for astrology compatibility
+        const { data: myProfile } = await supabase.from('profiles').select('date_of_birth').eq('user_id', user.id).single();
+        if (myProfile?.date_of_birth) {
+          setMyDateOfBirth(myProfile.date_of_birth);
         }
       } catch {
         router.push('/auth/login');
@@ -676,6 +712,7 @@ export default function DiscoverPage() {
                   key={currentProfile.id}
                   profile={currentProfile}
                   direction={exitDirection}
+                  myDateOfBirth={myDateOfBirth}
                 />
               )}
             </AnimatePresence>

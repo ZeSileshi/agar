@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
+import { getAstrologyProfile } from '@/lib/astrology';
 import AppNav from '@/components/AppNav';
 
 /* ------------------------------------------------------------------ */
@@ -41,7 +42,7 @@ interface PhotoSlot {
   uploading?: boolean;
 }
 
-const STEPS_DIRECT = ['Basic Info', 'Birth Details', 'Photos', 'Preferences'] as const;
+const STEPS_DIRECT = ['Basic Info', 'Birth Details', 'Palm & Astrology', 'Photos', 'Preferences'] as const;
 const STEPS_REFERRER = ['Basic Info', 'Photos', 'Preferences'] as const;
 
 const DEFAULT_PROFILE: ProfileData = {
@@ -141,6 +142,10 @@ export default function ProfilePage() {
   const [birth, setBirth] = useState<BirthDetails>(DEFAULT_BIRTH);
   const [photos, setPhotos] = useState<PhotoSlot[]>(emptySlots());
 
+  const [palmUrl, setPalmUrl] = useState<string | null>(null);
+  const [palmUploading, setPalmUploading] = useState(false);
+  const palmInputRef = useRef<HTMLInputElement | null>(null);
+
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   /* ---- Auth + Load ---- */
@@ -235,6 +240,24 @@ export default function ProfilePage() {
             }
           });
           setPhotos(slots);
+        }
+
+        // Load existing palm image from storage
+        try {
+          const { data: palmFiles } = await sb.storage
+            .from('palms')
+            .list(user.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+          const firstPalm = palmFiles?.[0];
+          if (firstPalm) {
+            const { data: palmSignedUrl } = await sb.storage
+              .from('palms')
+              .createSignedUrl(`${user.id}/${firstPalm.name}`, 3600);
+            if (palmSignedUrl?.signedUrl) {
+              setPalmUrl(palmSignedUrl.signedUrl);
+            }
+          }
+        } catch {
+          // Palm loading is optional, silently ignore errors
         }
       } catch {
         router.push('/auth/login');
@@ -416,6 +439,58 @@ export default function ProfilePage() {
     },
     [userId, photos],
   );
+
+  /* ---- Palm upload ---- */
+  const handlePalmUpload = useCallback(
+    async (file: File) => {
+      if (!userId) return;
+      setPalmUploading(true);
+      try {
+        const sb = getSupabase();
+        const path = `${userId}/palm_${Date.now()}.jpg`;
+
+        const { error: upErr } = await sb.storage
+          .from('palms')
+          .upload(path, file, { cacheControl: '3600', upsert: true });
+        if (upErr) throw upErr;
+
+        const { data: signedUrl } = await sb.storage
+          .from('palms')
+          .createSignedUrl(path, 3600);
+
+        if (signedUrl?.signedUrl) {
+          setPalmUrl(signedUrl.signedUrl);
+        }
+
+        setSaveMsg('Palm image uploaded!');
+        setTimeout(() => setSaveMsg(''), 3000);
+      } catch (err: any) {
+        console.error('Palm upload error:', err);
+        setSaveMsg(`Palm upload error: ${err.message ?? 'Failed'}`);
+        setTimeout(() => setSaveMsg(''), 3000);
+      } finally {
+        setPalmUploading(false);
+      }
+    },
+    [userId],
+  );
+
+  const handleDeletePalm = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const sb = getSupabase();
+      const { data: palmFiles } = await sb.storage
+        .from('palms')
+        .list(userId);
+      if (palmFiles && palmFiles.length > 0) {
+        const paths = palmFiles.map((f) => `${userId}/${f.name}`);
+        await sb.storage.from('palms').remove(paths);
+      }
+      setPalmUrl(null);
+    } catch (err: any) {
+      console.error('Palm delete error:', err);
+    }
+  }, [userId]);
 
   /* ---- Render helpers ---- */
   const pct = completionPercent(profile, birth, photos);
@@ -746,7 +821,158 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Step 3: Photos */}
+            {/* Step: Palm & Astrology */}
+            {STEPS[step] === 'Palm & Astrology' && (
+              <div className="space-y-6">
+                <h2 className="font-display text-xl font-bold text-gold-50 mb-1">
+                  Palm &amp; Astrology
+                </h2>
+
+                {/* --- Palm Upload Section --- */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gold-200/70">Palm Reading</h3>
+                    <span className="text-[11px] font-medium text-gold-400/60 bg-gold-400/8 border border-gold-400/15 rounded-full px-2.5 py-0.5">
+                      Optional
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl bg-gold-400/5 border border-gold-400/10 p-3">
+                    <p className="text-xs text-gold-200/50 leading-relaxed">
+                      Take a clear photo of your dominant hand&apos;s palm in good lighting.
+                      This enhances your compatibility score with palmistry-based matching.
+                    </p>
+                  </div>
+
+                  {palmUrl ? (
+                    <div className="relative rounded-xl border border-gold-400/20 bg-white/[0.02] overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={palmUrl}
+                        alt="Your palm"
+                        className="w-full max-h-80 object-contain bg-navy-900"
+                      />
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        <button
+                          onClick={handleDeletePalm}
+                          className="text-xs bg-rose-500/80 hover:bg-rose-500 text-white rounded-lg px-3 py-1.5 transition-colors backdrop-blur-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-navy-950/80 to-transparent p-3">
+                        <p className="text-xs text-emerald-400 font-medium">Palm image uploaded</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => palmInputRef.current?.click()}
+                      disabled={palmUploading}
+                      className="w-full rounded-xl border-2 border-dashed border-gold-400/20 bg-white/[0.02] hover:bg-white/[0.04] hover:border-gold-400/30 transition-all py-12 flex flex-col items-center justify-center gap-3 group"
+                    >
+                      {palmUploading ? (
+                        <svg className="animate-spin h-8 w-8 text-gold-400" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <>
+                          <div className="h-14 w-14 rounded-full bg-gold-400/10 border border-gold-400/15 flex items-center justify-center group-hover:bg-gold-400/15 transition-colors">
+                            <svg className="w-7 h-7 text-gold-400/60" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                            </svg>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-gold-200/50 group-hover:text-gold-200/70">
+                              Tap to upload or take a photo
+                            </p>
+                            <p className="text-xs text-gold-200/30 mt-1">
+                              Clear photo of your palm in good lighting
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  <input
+                    ref={palmInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePalmUpload(f);
+                      e.target.value = '';
+                    }}
+                  />
+                </div>
+
+                {/* --- Astrology Summary Section --- */}
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-sm font-semibold text-gold-200/70">Your Astrology Profile</h3>
+
+                  {(() => {
+                    const astro = getAstrologyProfile(profile.date_of_birth);
+                    if (!astro) {
+                      return (
+                        <div className="rounded-xl bg-gold-400/5 border border-gold-400/10 p-5 text-center">
+                          <p className="text-sm text-gold-200/40">
+                            Complete <span className="text-gold-300 font-medium">Birth Details</span> first to see your astrology profile.
+                          </p>
+                          <button
+                            onClick={() => {
+                              const birthIdx = (STEPS as readonly string[]).indexOf('Birth Details');
+                              if (birthIdx >= 0) setStep(birthIdx);
+                            }}
+                            className="mt-3 text-xs font-medium text-gold-400 hover:text-gold-300 underline underline-offset-2 transition-colors"
+                          >
+                            Go to Birth Details
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Sun Sign Card */}
+                        <div className="rounded-xl border border-gold-400/15 bg-white/[0.03] p-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-2xl">{astro.sunSignSymbol}</span>
+                            <div>
+                              <p className="text-xs text-gold-200/40 uppercase tracking-wider">Sun Sign</p>
+                              <p className="text-sm font-bold text-gold-100">{astro.sunSign}</p>
+                            </div>
+                          </div>
+                          <span className="inline-block text-[11px] font-medium text-gold-300/70 bg-gold-400/8 border border-gold-400/10 rounded-full px-2.5 py-0.5">
+                            {astro.sunSignElement} Element
+                          </span>
+                        </div>
+
+                        {/* Chinese Zodiac Card */}
+                        <div className="rounded-xl border border-gold-400/15 bg-white/[0.03] p-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-2xl">{astro.chineseAnimalEmoji}</span>
+                            <div>
+                              <p className="text-xs text-gold-200/40 uppercase tracking-wider">Chinese Zodiac</p>
+                              <p className="text-sm font-bold text-gold-100">{astro.chineseAnimal}</p>
+                            </div>
+                          </div>
+                          <span className="inline-block text-[11px] font-medium text-gold-300/70 bg-gold-400/8 border border-gold-400/10 rounded-full px-2.5 py-0.5">
+                            {astro.chineseElement} Element
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Step: Photos */}
             {STEPS[step] === 'Photos' && (
               <div className="space-y-5">
                 <h2 className="font-display text-xl font-bold text-gold-50 mb-1">
