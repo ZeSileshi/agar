@@ -1,56 +1,146 @@
-import React from 'react';
-import { StatusBar, View, Text, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { StatusBar, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
+import {
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+  Outfit_800ExtraBold,
+} from '@expo-google-fonts/outfit';
+import {
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
 import { initI18n } from '@agar/i18n';
+import { colors } from './theme/colors';
+
+// Screens
+import WelcomeScreen from './screens/WelcomeScreen';
+import PhoneEntryScreen from './screens/auth/PhoneEntryScreen';
+import OTPScreen from './screens/auth/OTPScreen';
+import UserTypeScreen from './screens/auth/UserTypeScreen';
+import BasicInfoScreen from './screens/onboarding/BasicInfoScreen';
+import PhotoUploadScreen from './screens/onboarding/PhotoUploadScreen';
+import PalmScanScreen from './screens/onboarding/PalmScanScreen';
+import DiscoveryScreen from './screens/DiscoveryScreen';
 
 // Initialize i18n
 initI18n('en');
 
+// Keep splash visible while loading fonts
+SplashScreen.preventAutoHideAsync();
+
+type Screen =
+  | 'welcome'
+  | 'phone'
+  | 'otp'
+  | 'userType'
+  | 'basicInfo'
+  | 'photoUpload'
+  | 'palmScan'
+  | 'discovery';
+
 export default function App() {
+  const [screen, setScreen] = useState<Screen>('welcome');
+
+  const [fontsLoaded] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_700Bold,
+    NotoSansEthiopic: require('./assets/fonts/NotoSansEthiopic.ttf'),
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.gold} size="large" />
+      </View>
+    );
+  }
+
+  const renderScreen = () => {
+    switch (screen) {
+      case 'welcome':
+        return <WelcomeScreen onGetStarted={() => setScreen('phone')} />;
+
+      case 'phone':
+        return <PhoneEntryScreen onContinue={() => setScreen('otp')} />;
+
+      case 'otp':
+        return (
+          <OTPScreen
+            onVerified={() => setScreen('userType')}
+            onBack={() => setScreen('phone')}
+          />
+        );
+
+      case 'userType':
+        return <UserTypeScreen onContinue={() => setScreen('basicInfo')} />;
+
+      case 'basicInfo':
+        return (
+          <BasicInfoScreen
+            onContinue={(_data) => setScreen('photoUpload')}
+            onBack={() => setScreen('userType')}
+          />
+        );
+
+      case 'photoUpload':
+        return (
+          <PhotoUploadScreen
+            onContinue={(_photos) => setScreen('palmScan')}
+            onBack={() => setScreen('basicInfo')}
+          />
+        );
+
+      case 'palmScan':
+        return (
+          <PalmScanScreen
+            onContinue={(_reading) => setScreen('discovery')}
+            onBack={() => setScreen('photoUpload')}
+          />
+        );
+
+      case 'discovery':
+        return <DiscoveryScreen />;
+    }
+  };
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
-        <StatusBar barStyle="light-content" backgroundColor="#0f0f23" />
-        <View style={styles.container}>
-          <Text style={styles.logo}>A</Text>
-          <Text style={styles.title}>Agar</Text>
-          <Text style={styles.titleAmharic}>አጋር</Text>
-          <Text style={styles.subtitle}>Where stars align & hearts connect</Text>
-        </View>
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        {renderScreen()}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loading: {
     flex: 1,
-    backgroundColor: '#0f0f23',
-    alignItems: 'center',
+    backgroundColor: colors.background,
     justifyContent: 'center',
-    padding: 24,
-  },
-  logo: {
-    fontSize: 64,
-    fontWeight: '800',
-    color: '#6c5ce7',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  titleAmharic: {
-    fontSize: 24,
-    color: '#a78bfa',
-    marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#71717a',
-    textAlign: 'center',
+    alignItems: 'center',
   },
 });

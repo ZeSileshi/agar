@@ -33,7 +33,8 @@
     "plugins": [
       "expo-router",
       "expo-image-picker",
-      "expo-location"
+      "expo-location",
+      "expo-font"
     ]
   }
 }
