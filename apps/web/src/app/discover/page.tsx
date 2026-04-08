@@ -600,7 +600,7 @@ export default function DiscoverPage() {
       <nav className="fixed top-0 z-50 w-full border-b border-gold-400/10 bg-navy-950/80 backdrop-blur-xl md:ml-20 lg:ml-56 md:w-[calc(100%-5rem)] lg:w-[calc(100%-14rem)]">
         <div className="mx-auto flex max-w-lg items-center justify-between px-6 py-3">
           <Link href="/dashboard" className="flex items-center gap-2.5 md:hidden">
-            <Image src="/logo.png" alt="Agar" width={36} height={36} />
+            <Image src="/logo.png" alt="Agar" width={36} height={36} className="logo-blend" />
             <span className="font-display text-lg font-bold tracking-tight text-gold-100">
               Discover
             </span>

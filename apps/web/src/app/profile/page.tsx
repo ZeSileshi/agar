@@ -447,7 +447,7 @@ export default function ProfilePage() {
       <nav className="fixed top-0 z-50 w-full border-b border-gold-400/10 bg-navy-950/80 backdrop-blur-xl md:ml-20 lg:ml-56 md:w-[calc(100%-5rem)] lg:w-[calc(100%-14rem)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/dashboard" className="flex items-center gap-2.5 md:hidden">
-            <Image src="/logo.png" alt="Agar" width={44} height={44} />
+            <Image src="/logo.png" alt="Agar" width={44} height={44} className="logo-blend" />
             <span className="font-display text-xl font-bold tracking-tight text-gold-100">
               Agar{' '}
               <span className="text-gold-400/60 font-normal text-sm ml-0.5">
