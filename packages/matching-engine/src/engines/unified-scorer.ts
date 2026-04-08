@@ -23,11 +23,16 @@ import type {
 } from '../types';
 
 import { DEFAULT_WEIGHTS } from '../types';
-import { computeWesternAstrology } from './western-astrology';
-import { computeVedicAstrology } from './vedic-astrology';
-import { computeChineseZodiac } from './chinese-zodiac';
+import { WesternAstrologyEngine } from './western-astrology';
+import { VedicAstrologyEngine } from './vedic-astrology';
+import { ChineseZodiacEngine } from './chinese-zodiac';
 import { computeBehavioralMatch } from './behavioral-matching';
 import { clamp } from '../utils/math';
+
+// Instantiate engines
+const westernEngine = new WesternAstrologyEngine();
+const vedicEngine = new VedicAstrologyEngine();
+const chineseEngine = new ChineseZodiacEngine();
 
 // ---------------------------------------------------------------------------
 // Confidence Calculation
@@ -187,7 +192,7 @@ export function computeUnifiedScore(
   // ---- Run Western Astrology ----
   let westernResult: WesternAstrologyResult | null = null;
   if (profile1.westernChart && profile2.westernChart && !skipSet.has('westernAstrology')) {
-    westernResult = computeWesternAstrology(profile1.westernChart, profile2.westernChart);
+    westernResult = westernEngine.calculateSynastry(profile1.westernChart, profile2.westernChart) as any;
     availableEngines.add('westernAstrology');
     allStrengths.push(...westernResult.strengths);
     allChallenges.push(...westernResult.challenges);
@@ -196,7 +201,7 @@ export function computeUnifiedScore(
   // ---- Run Vedic Astrology ----
   let vedicResult: VedicAstrologyResult | null = null;
   if (profile1.vedicChart && profile2.vedicChart && !skipSet.has('vedicAstrology')) {
-    vedicResult = computeVedicAstrology(profile1.vedicChart, profile2.vedicChart);
+    vedicResult = vedicEngine.calculateGunaScore(profile1.vedicChart, profile2.vedicChart) as any;
     availableEngines.add('vedicAstrology');
     if (vedicResult.recommendation === 'Excellent' || vedicResult.recommendation === 'Very Good') {
       allStrengths.push(`Vedic Guna Milan: ${vedicResult.recommendation} (${vedicResult.totalGunaPoints}/36 points)`);
@@ -209,7 +214,7 @@ export function computeUnifiedScore(
   // ---- Run Chinese Zodiac ----
   let chineseResult: ChineseZodiacResult | null = null;
   if (profile1.chineseZodiac && profile2.chineseZodiac && !skipSet.has('chineseZodiac')) {
-    chineseResult = computeChineseZodiac(profile1.chineseZodiac, profile2.chineseZodiac);
+    chineseResult = chineseEngine.calculateCompatibility(profile1.chineseZodiac, profile2.chineseZodiac) as any;
     availableEngines.add('chineseZodiac');
     allStrengths.push(...chineseResult.strengths);
     allChallenges.push(...chineseResult.challenges);

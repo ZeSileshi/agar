@@ -62,3 +62,4 @@ services/ml-service/*.pyc
 # Misc
 *.log
 .cache/
+.vercel

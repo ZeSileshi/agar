@@ -9,6 +9,7 @@
     "dev:web": "turbo dev --filter=@agar/web",
     "dev:mobile": "turbo dev --filter=@agar/mobile",
     "build": "turbo build",
+    "build:web": "turbo build --filter=@agar/web",
     "lint": "turbo lint",
     "test": "turbo test",
     "type-check": "turbo type-check",
@@ -24,9 +25,17 @@
     "prettier": "^3.4.0",
     "eslint": "^9.17.0"
   },
-  "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "packageManager": "npm@10.8.2",
+  "overrides": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
