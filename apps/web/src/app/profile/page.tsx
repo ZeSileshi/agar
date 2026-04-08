@@ -15,6 +15,9 @@ import {
   isValidPalmReading,
 } from '@/lib/palmistry';
 import AppNav from '@/components/AppNav';
+import PalmScanner from '@/components/PalmScanner';
+import { generatePalmStory } from '@/lib/palm-story';
+import type { PalmStory } from '@/lib/palm-story';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -155,6 +158,9 @@ export default function ProfilePage() {
   const palmInputRef = useRef<HTMLInputElement | null>(null);
   const [palmReading, setPalmReading] = useState<PalmReading | null>(null);
   const [palmActiveSection, setPalmActiveSection] = useState<number>(0);
+  const [palmScannerOpen, setPalmScannerOpen] = useState(false);
+  const [palmStory, setPalmStory] = useState<PalmStory | null>(null);
+  const [palmStoryRevealIndex, setPalmStoryRevealIndex] = useState(0);
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -230,7 +236,14 @@ export default function ProfilePage() {
           });
           // Load palm reading data
           if (bRow.palm_reading && isValidPalmReading(bRow.palm_reading)) {
-            setPalmReading(bRow.palm_reading as PalmReading);
+            const reading = bRow.palm_reading as PalmReading;
+            setPalmReading(reading);
+            // Regenerate the palm story from saved reading
+            const displayName = pRow?.display_name ?? fullName ?? 'Your';
+            const story = generatePalmStory(reading, displayName);
+            setPalmStory(story);
+            // Reveal all sections immediately for saved readings
+            setPalmStoryRevealIndex(story.sections.length);
           }
         }
 
@@ -843,7 +856,7 @@ export default function ProfilePage() {
                   Palm &amp; Astrology
                 </h2>
 
-                {/* --- Palm Upload Section --- */}
+                {/* --- Palm Scanner Section --- */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gold-200/70">Palm Reading</h3>
@@ -854,61 +867,104 @@ export default function ProfilePage() {
 
                   <div className="rounded-xl bg-gold-400/5 border border-gold-400/10 p-3">
                     <p className="text-xs text-gold-200/50 leading-relaxed">
-                      Take a clear photo of your dominant hand&apos;s palm in good lighting.
+                      Scan your palm to automatically detect your heart, head, life, and fate lines.
                       This enhances your compatibility score with palmistry-based matching.
                     </p>
                   </div>
 
-                  {palmUrl ? (
-                    <div className="relative rounded-xl border border-gold-400/20 bg-white/[0.02] overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={palmUrl}
-                        alt="Your palm"
-                        className="w-full max-h-80 object-contain bg-navy-900"
-                      />
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        <button
-                          onClick={handleDeletePalm}
-                          className="text-xs bg-rose-500/80 hover:bg-rose-500 text-white rounded-lg px-3 py-1.5 transition-colors backdrop-blur-sm"
+                  {palmReading && palmStory ? (
+                    <>
+                      {/* Palm Story Display */}
+                      <div className="space-y-3">
+                        {palmUrl && (
+                          <div className="relative rounded-xl border border-gold-400/20 bg-white/[0.02] overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={palmUrl}
+                              alt="Your palm"
+                              className="w-full max-h-56 object-contain bg-navy-900"
+                            />
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-navy-950/80 to-transparent p-3">
+                              <p className="text-xs text-emerald-400 font-medium">Palm scanned successfully</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Story sections with staggered reveal */}
+                        {palmStory.sections.map((section, idx) => (
+                          <div
+                            key={section.line}
+                            className="rounded-xl border border-gold-400/12 bg-white/[0.02] p-4 transition-all duration-500"
+                            style={{
+                              opacity: idx <= palmStoryRevealIndex ? 1 : 0,
+                              transform: idx <= palmStoryRevealIndex ? 'translateY(0)' : 'translateY(12px)',
+                              transitionDelay: `${idx * 150}ms`,
+                            }}
+                          >
+                            <div className="flex items-center gap-2.5 mb-2">
+                              <span className="text-lg">
+                                {section.icon === 'heart' ? '\u2764\uFE0F' : section.icon === 'brain' ? '\uD83E\uDDE0' : section.icon === 'sparkles' ? '\u2728' : '\uD83C\uDF1F'}
+                              </span>
+                              <div>
+                                <p className="text-sm font-semibold text-gold-100">{section.line}</p>
+                                <p className="text-[11px] text-gold-400/60 capitalize">{section.trait.replace(/_/g, ' ')}</p>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gold-200/60 leading-relaxed">
+                              {section.narrative}
+                            </p>
+                          </div>
+                        ))}
+
+                        {/* Summary */}
+                        <div
+                          className="rounded-xl border border-gold-400/20 bg-gold-400/5 p-4 transition-all duration-500"
+                          style={{
+                            opacity: palmStoryRevealIndex >= palmStory.sections.length ? 1 : 0,
+                            transform: palmStoryRevealIndex >= palmStory.sections.length ? 'translateY(0)' : 'translateY(12px)',
+                            transitionDelay: `${palmStory.sections.length * 150}ms`,
+                          }}
                         >
-                          Remove
+                          <p className="text-sm font-semibold text-gold-200/80 mb-1.5">Your Palm Summary</p>
+                          <p className="text-sm text-gold-200/55 leading-relaxed">{palmStory.summary}</p>
+                        </div>
+
+                        <p className="text-[11px] text-gold-200/25 text-center italic">
+                          This reading is private and only visible to you.
+                        </p>
+
+                        {/* Rescan button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPalmScannerOpen(true);
+                          }}
+                          className="w-full rounded-xl border border-gold-400/15 bg-white/[0.02] hover:bg-white/[0.04] transition-all py-3 text-sm font-medium text-gold-200/50 hover:text-gold-200/70"
+                        >
+                          Rescan Palm
                         </button>
                       </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-navy-950/80 to-transparent p-3">
-                        <p className="text-xs text-emerald-400 font-medium">Palm image uploaded</p>
-                      </div>
-                    </div>
+                    </>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => palmInputRef.current?.click()}
-                      disabled={palmUploading}
+                      onClick={() => setPalmScannerOpen(true)}
                       className="w-full rounded-xl border-2 border-dashed border-gold-400/20 bg-white/[0.02] hover:bg-white/[0.04] hover:border-gold-400/30 transition-all py-12 flex flex-col items-center justify-center gap-3 group"
                     >
-                      {palmUploading ? (
-                        <svg className="animate-spin h-8 w-8 text-gold-400" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      <div className="h-14 w-14 rounded-full bg-gold-400/10 border border-gold-400/15 flex items-center justify-center group-hover:bg-gold-400/15 transition-colors">
+                        <svg className="w-7 h-7 text-gold-400/60" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                         </svg>
-                      ) : (
-                        <>
-                          <div className="h-14 w-14 rounded-full bg-gold-400/10 border border-gold-400/15 flex items-center justify-center group-hover:bg-gold-400/15 transition-colors">
-                            <svg className="w-7 h-7 text-gold-400/60" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-                            </svg>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm font-medium text-gold-200/50 group-hover:text-gold-200/70">
-                              Tap to upload or take a photo
-                            </p>
-                            <p className="text-xs text-gold-200/30 mt-1">
-                              Clear photo of your palm in good lighting
-                            </p>
-                          </div>
-                        </>
-                      )}
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gold-200/70 group-hover:text-gold-100">
+                          Scan Your Palm
+                        </p>
+                        <p className="text-xs text-gold-200/30 mt-1">
+                          Use your camera to auto-detect palm lines
+                        </p>
+                      </div>
                     </button>
                   )}
 
@@ -926,10 +982,12 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* --- Palm Line Traits Questionnaire --- */}
+                {/* --- Palm Line Traits Questionnaire (Manual Fallback) --- */}
                 <div className="space-y-4 pt-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gold-200/70">Palm Line Reading</h3>
+                    <h3 className="text-sm font-semibold text-gold-200/70">
+                      {palmReading && palmStory ? 'Adjust Palm Lines Manually' : 'Or identify your palm lines manually'}
+                    </h3>
                     {palmReading && (
                       <span className="text-[11px] font-medium text-emerald-400/80 bg-emerald-400/8 border border-emerald-400/15 rounded-full px-2.5 py-0.5">
                         Complete
@@ -939,8 +997,9 @@ export default function ProfilePage() {
 
                   <div className="rounded-xl bg-gold-400/5 border border-gold-400/10 p-3">
                     <p className="text-xs text-gold-200/50 leading-relaxed">
-                      Identify your palm line traits below. Look at your palm (or the photo you uploaded) and select the closest match for each line.
-                      This powers our palmistry-based compatibility matching.
+                      {palmReading && palmStory
+                        ? 'Verify or override the auto-detected palm line traits. Select the closest match for each line.'
+                        : 'If you cannot use the camera, identify your palm line traits below. Look at your palm and select the closest match for each line. This powers our palmistry-based compatibility matching.'}
                     </p>
                   </div>
 
@@ -1442,6 +1501,52 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Palm Scanner Modal */}
+      {palmScannerOpen && (
+        <PalmScanner
+          onCapture={async (reading, imageBlob) => {
+            // 1. Set the reading
+            setPalmReading(reading);
+
+            // 2. Generate the story
+            const story = generatePalmStory(reading, profile.display_name || profile.first_name || 'Your');
+            setPalmStory(story);
+
+            // 3. Animate the story reveal
+            setPalmStoryRevealIndex(0);
+            for (let i = 0; i <= story.sections.length; i++) {
+              setTimeout(() => setPalmStoryRevealIndex(i), 300 + i * 400);
+            }
+
+            // 4. Upload the image to Supabase storage
+            if (userId) {
+              try {
+                const sb = getSupabase();
+                const path = `${userId}/palm_${Date.now()}.jpg`;
+                const file = new File([imageBlob], 'palm.jpg', { type: 'image/jpeg' });
+                await sb.storage
+                  .from('palms')
+                  .upload(path, file, { cacheControl: '3600', upsert: true });
+
+                const { data: signedUrl } = await sb.storage
+                  .from('palms')
+                  .createSignedUrl(path, 3600);
+
+                if (signedUrl?.signedUrl) {
+                  setPalmUrl(signedUrl.signedUrl);
+                }
+              } catch (err) {
+                console.error('Palm upload error:', err);
+              }
+            }
+
+            // 5. Close scanner
+            setPalmScannerOpen(false);
+          }}
+          onClose={() => setPalmScannerOpen(false)}
+        />
+      )}
 
       {/* Global input styles injected via style tag for this page */}
       <style>{`
