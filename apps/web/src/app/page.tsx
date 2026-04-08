@@ -17,7 +17,7 @@ type Lang = 'en' | 'am' | 'es';
 
 const content = {
   en: {
-    nav: { signin: 'Sign In', download: 'Download' },
+    nav: { signin: 'Sign In', register: 'Register' },
     hero: {
       badge: 'Astrology meets AI',
       title: 'Find someone who truly',
@@ -113,7 +113,7 @@ const content = {
     },
   },
   am: {
-    nav: { signin: '\u1260\u12ED\u1295', download: '\u12EB\u12CD\u122D\u12F1' },
+    nav: { signin: '\u1260\u12ED\u1295', register: '\u12ED\u1218\u12DD\u1308\u1261' },
     hero: {
       badge: '\u12AE\u12A8\u1265 \u1246\u1320\u122B \u12A8AI \u130B\u122D',
       title: '\u1260\u12A5\u1235\u12A9 \u12E8\u121A\u1308\u1263\u12CE\u1275\u1295',
@@ -209,7 +209,7 @@ const content = {
     },
   },
   es: {
-    nav: { signin: 'Iniciar', download: 'Descargar' },
+    nav: { signin: 'Iniciar', register: 'Registrarse' },
     hero: {
       badge: 'Astrolog\u00EDa + IA',
       title: 'Encuentra a alguien que',
@@ -533,7 +533,7 @@ export default function LandingPage() {
               {t.nav.signin}
             </Link>
             <Link href="/auth/signup" className="rounded-full bg-gradient-to-r from-gold-400 to-gold-500 px-5 py-2 text-sm font-semibold text-navy-950 transition-all hover:from-gold-300 hover:to-gold-400 active:scale-[0.98] shadow-lg shadow-gold-400/15">
-              {t.nav.download}
+              {t.nav.register}
             </Link>
           </div>
         </div>
