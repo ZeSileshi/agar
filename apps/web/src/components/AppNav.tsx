@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Heart, MessageCircle, User } from 'lucide-react';
+import { Home, Heart, MessageCircle, User, ShoppingBag } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 
 interface NavItem {
@@ -16,6 +16,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Home', icon: Home },
   { href: '/discover', label: 'Discover', icon: Heart },
   { href: '/messages', label: 'Messages', icon: MessageCircle },
+  { href: '/shop', label: 'Shop', icon: ShoppingBag },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 

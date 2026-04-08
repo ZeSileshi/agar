@@ -3,7 +3,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, Smile } from 'lucide-react';
+import { ArrowLeft, Send, Smile, Gift, Coins, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { GIFT_CATALOG, type GiftItem } from '@/lib/gifts';
 import { format, isToday, isYesterday } from 'date-fns';
 import { getSupabase } from '@/lib/supabase';
 
@@ -56,6 +58,10 @@ export default function ChatClient() {
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
+  const [showGiftPicker, setShowGiftPicker] = useState(false);
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [sendingGift, setSendingGift] = useState(false);
+  const [giftToast, setGiftToast] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -139,6 +145,12 @@ export default function ChatClient() {
           return;
         }
         setUserId(user.id);
+
+        // Fetch points balance
+        try {
+          const { data: uData } = await supabase.from('users').select('points_balance').eq('id', user.id).single();
+          if (uData) setPointsBalance(uData.points_balance ?? 0);
+        } catch { /* ignore */ }
 
         // Get match details
         const { data: match, error: matchError } = await supabase
@@ -320,6 +332,87 @@ export default function ChatClient() {
     }
   }
 
+  async function handleSendGift(gift: GiftItem) {
+    if (!userId || !partner || sendingGift || pointsBalance < gift.points) return;
+    setSendingGift(true);
+    try {
+      const supabase = getSupabase();
+
+      // 1. Insert gift
+      const { data: giftData } = await supabase
+        .from('gifts')
+        .insert({
+          sender_id: userId,
+          receiver_id: partner.userId,
+          gift_type: gift.id,
+          message: `Sent a ${gift.name} ${gift.emoji}`,
+        })
+        .select('id')
+        .single();
+
+      // 2. Debit points
+      await supabase.from('points_transactions').insert({
+        user_id: userId,
+        amount: -gift.points,
+        type: 'gift_sent',
+        description: `Sent ${gift.name} to ${partner.displayName}`,
+        reference_id: giftData?.id ?? null,
+      });
+
+      const newBalance = pointsBalance - gift.points;
+      await supabase
+        .from('users')
+        .update({ points_balance: newBalance })
+        .eq('id', userId);
+
+      setPointsBalance(newBalance);
+
+      // 3. Insert gift message
+      const { data: msgData } = await supabase
+        .from('messages')
+        .insert({
+          match_id: matchId,
+          sender_id: userId,
+          content: `${gift.emoji} Sent a ${gift.name}!`,
+          type: 'gift',
+          status: 'sent',
+        })
+        .select('id, match_id, sender_id, content, type, status, created_at, read_at')
+        .single();
+
+      if (msgData) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: msgData.id,
+            matchId: msgData.match_id,
+            senderId: msgData.sender_id,
+            content: msgData.content,
+            type: msgData.type,
+            status: msgData.status,
+            createdAt: msgData.created_at,
+            readAt: msgData.read_at,
+          },
+        ]);
+        setTimeout(() => scrollToBottom(), 50);
+      }
+
+      // Update last_message_at
+      await supabase
+        .from('matches')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', matchId);
+
+      setShowGiftPicker(false);
+      setGiftToast(`${gift.emoji} ${gift.name} sent!`);
+      setTimeout(() => setGiftToast(null), 3000);
+    } catch (err) {
+      console.error('Failed to send gift:', err);
+    } finally {
+      setSendingGift(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-navy-950 flex items-center justify-center">
@@ -436,16 +529,25 @@ export default function ChatClient() {
 
                     <div
                       className={`group relative max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                        isSent
-                          ? 'bg-gold-400 text-navy-950 rounded-br-md'
-                          : 'bg-navy-800 text-gold-100 rounded-bl-md'
+                        msg.type === 'gift'
+                          ? 'bg-gradient-to-br from-gold-400/20 to-gold-500/10 border border-gold-400/20 text-gold-100'
+                          : isSent
+                            ? 'bg-gold-400 text-navy-950 rounded-br-md'
+                            : 'bg-navy-800 text-gold-100 rounded-bl-md'
                       } ${msg.status === 'failed' ? 'opacity-60' : ''} ${
                         msg.pending ? 'opacity-80' : ''
                       }`}
                     >
+                      {msg.type === 'gift' ? (
+                        <p className="text-sm leading-relaxed text-center py-1">
+                          <span className="text-2xl block mb-1">{msg.content.split(' ')[0]}</span>
+                          <span className="text-gold-200/70 text-xs">{msg.content.slice(msg.content.indexOf(' ') + 1)}</span>
+                        </p>
+                      ) : (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {msg.content}
                       </p>
+                      )}
                       <div
                         className={`mt-1 flex items-center gap-1.5 ${
                           isSent ? 'justify-end' : 'justify-start'
@@ -494,6 +596,19 @@ export default function ChatClient() {
       {/* Input area */}
       <div className="shrink-0 border-t border-gold-400/10 bg-navy-950/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-2xl items-end gap-2 px-4 py-3">
+          {/* Gift button */}
+          <button
+            onClick={() => setShowGiftPicker(!showGiftPicker)}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 ${
+              showGiftPicker
+                ? 'bg-gold-400/20 text-gold-400 border border-gold-400/30'
+                : 'bg-white/[0.04] text-gold-200/40 border border-gold-400/10 hover:bg-white/[0.08] hover:text-gold-200/60'
+            }`}
+            aria-label="Send a gift"
+          >
+            <Gift className="h-5 w-5" />
+          </button>
+
           <div className="relative flex-1">
             <textarea
               ref={inputRef}
@@ -525,6 +640,87 @@ export default function ChatClient() {
           </button>
         </div>
       </div>
+
+      {/* Gift picker bottom sheet */}
+      <AnimatePresence>
+        {showGiftPicker && (
+          <motion.div
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-navy-950/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowGiftPicker(false)}
+          >
+            <motion.div
+              className="w-full max-w-2xl rounded-t-3xl border-t border-x border-gold-400/15 bg-navy-900 p-5 pb-8 shadow-2xl"
+              initial={{ y: 300, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 300, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-base font-bold text-gold-50">Send a Gift</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 rounded-full bg-gold-400/10 border border-gold-400/15 px-2.5 py-1">
+                    <Coins className="h-3 w-3 text-gold-400" />
+                    <span className="text-[11px] font-bold text-gold-300">{pointsBalance}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowGiftPicker(false)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-gold-200/40 hover:bg-white/[0.05]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Gift grid */}
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[40vh] overflow-y-auto">
+                {GIFT_CATALOG.map((gift) => {
+                  const canAfford = pointsBalance >= gift.points;
+                  return (
+                    <button
+                      key={gift.id}
+                      onClick={() => canAfford && handleSendGift(gift)}
+                      disabled={!canAfford || sendingGift}
+                      className={`flex flex-col items-center gap-1 rounded-xl p-3 transition-all ${
+                        canAfford
+                          ? 'bg-white/[0.03] border border-gold-400/10 hover:bg-white/[0.06] hover:border-gold-400/25 hover:scale-105 active:scale-95'
+                          : 'bg-white/[0.01] border border-white/[0.03] opacity-40 cursor-not-allowed'
+                      }`}
+                    >
+                      <span className="text-2xl">{gift.emoji}</span>
+                      <span className="text-[10px] text-gold-200/60 font-medium truncate w-full text-center">{gift.name}</span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-gold-400">
+                        <Coins className="h-2.5 w-2.5" />
+                        {gift.points}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Gift sent toast */}
+      <AnimatePresence>
+        {giftToast && (
+          <motion.div
+            className="fixed top-6 left-1/2 z-[110] -translate-x-1/2"
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -40, opacity: 0 }}
+          >
+            <div className="flex items-center gap-2 rounded-full bg-gold-400/90 backdrop-blur-xl px-5 py-2.5 shadow-lg shadow-gold-400/20">
+              <span className="text-sm font-medium text-navy-950">{giftToast}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

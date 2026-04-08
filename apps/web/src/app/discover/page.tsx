@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Heart, Star, MapPin, User, Compass } from 'lucide-react';
+import { X, Heart, Star, MapPin, User, Compass, Coins } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import {
   getAstrologyProfile,
@@ -16,6 +16,7 @@ import {
 import type { PalmReading } from '@/lib/palmistry';
 import { isValidPalmReading } from '@/lib/palmistry';
 import AppNav from '@/components/AppNav';
+import { DAILY_UNLOCK_COST } from '@/lib/gifts';
 
 /* ---------- types ---------- */
 
@@ -291,7 +292,17 @@ function EmptyState() {
 
 /* ---------- Daily limit reached ---------- */
 
-function DailyLimitReached() {
+function DailyLimitReached({
+  pointsBalance,
+  onUnlock,
+  unlocking,
+}: {
+  pointsBalance: number;
+  onUnlock: () => void;
+  unlocking: boolean;
+}) {
+  const canAfford = pointsBalance >= DAILY_UNLOCK_COST;
+
   return (
     <div className="flex h-full flex-col items-center justify-center text-center px-8">
       <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-rose-400/10 border border-rose-400/10">
@@ -301,11 +312,40 @@ function DailyLimitReached() {
         Daily limit reached
       </h2>
       <p className="mt-2 max-w-xs text-sm text-gold-200/40 leading-relaxed">
-        You&apos;ve viewed 10 profiles today. Quality over quantity -- come back tomorrow!
+        You&apos;ve viewed 10 profiles today. Quality over quantity -- or unlock more!
       </p>
+
+      {/* Unlock with points */}
+      <button
+        onClick={onUnlock}
+        disabled={!canAfford || unlocking}
+        className={`mt-6 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
+          canAfford
+            ? 'bg-gradient-to-r from-gold-400 to-gold-500 text-navy-950 hover:scale-[1.02] active:scale-[0.98]'
+            : 'bg-gold-400/10 border border-gold-400/15 text-gold-200/40 cursor-not-allowed'
+        }`}
+      >
+        <Coins className="h-4 w-4" />
+        {unlocking ? 'Unlocking...' : `Unlock 15 more for ${DAILY_UNLOCK_COST} pts`}
+      </button>
+
+      {!canAfford && (
+        <Link
+          href="/shop"
+          className="mt-3 text-xs text-gold-400 hover:text-gold-300 transition-colors"
+        >
+          Need points? Visit the Shop
+        </Link>
+      )}
+
+      <div className="mt-2 flex items-center gap-1 text-xs text-gold-200/30">
+        <Coins className="h-3 w-3 text-gold-400/50" />
+        <span>Balance: {pointsBalance} pts</span>
+      </div>
+
       <Link
         href="/dashboard"
-        className="mt-6 rounded-xl bg-gold-400/10 border border-gold-400/15 px-6 py-2.5 text-sm font-medium text-gold-300 transition-colors hover:bg-gold-400/15"
+        className="mt-4 rounded-xl bg-gold-400/10 border border-gold-400/15 px-6 py-2.5 text-sm font-medium text-gold-300 transition-colors hover:bg-gold-400/15"
       >
         Back to Dashboard
       </Link>
@@ -349,6 +389,9 @@ export default function DiscoverPage() {
   const [userType, setUserType] = useState<'direct' | 'referrer'>('direct');
   const [myDateOfBirth, setMyDateOfBirth] = useState<string | null>(null);
   const [myPalmReading, setMyPalmReading] = useState<PalmReading | null>(null);
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [unlocking, setUnlocking] = useState(false);
+  const [dailyLimitCap, setDailyLimitCap] = useState(DAILY_LIMIT);
 
   // Match modal state
   const [matchModal, setMatchModal] = useState<{
@@ -380,6 +423,12 @@ export default function DiscoverPage() {
         if (myProfile?.date_of_birth) {
           setMyDateOfBirth(myProfile.date_of_birth);
         }
+
+        // Load points balance
+        try {
+          const { data: uData } = await supabase.from('users').select('points_balance').eq('id', user.id).single();
+          if (uData) setPointsBalance(uData.points_balance ?? 0);
+        } catch { /* ignore */ }
 
         // Load user's palm reading for palmistry compatibility
         const { data: myBirthData } = await supabase.from('birth_data').select('palm_reading').eq('user_id', user.id).single();
@@ -418,7 +467,7 @@ export default function DiscoverPage() {
       const currentCount = dailyData?.view_count ?? 0;
       setDailyCount(currentCount);
 
-      if (currentCount >= DAILY_LIMIT) {
+      if (currentCount >= dailyLimitCap) {
         setLimitReached(true);
         setLoading(false);
         return;
@@ -453,7 +502,7 @@ export default function DiscoverPage() {
           .select('id, created_by_user_id, first_name, age, gender, bio, interests, location_city')
           .not('created_by_user_id', 'in', `(${swipedIds.join(',')})`)
           .eq('is_active', true)
-          .limit(DAILY_LIMIT - currentCount);
+          .limit(dailyLimitCap - currentCount);
         // Map to same shape as profiles
         candidateProfiles = (data ?? []).map((rp: any) => ({
           ...rp,
@@ -468,7 +517,7 @@ export default function DiscoverPage() {
           .from('profiles')
           .select('id, user_id, first_name, display_name, date_of_birth, gender, bio, interests, location_city')
           .not('user_id', 'in', `(${swipedIds.join(',')})`)
-          .limit(DAILY_LIMIT - currentCount);
+          .limit(dailyLimitCap - currentCount);
 
         // Apply gender preference filter
         if (myProfile?.gender_preference && myProfile.gender_preference !== 'everyone') {
@@ -591,7 +640,7 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false);
     }
-  }, [userId, supabase]);
+  }, [userId, supabase, dailyLimitCap]);
 
   /* --- Swipe action --- */
   const handleSwipe = useCallback(async (action: 'skip' | 'like' | 'love') => {
@@ -678,7 +727,7 @@ export default function DiscoverPage() {
         setCurrentIndex((i) => i + 1);
         setExitDirection(null);
 
-        if (newCount >= DAILY_LIMIT) {
+        if (newCount >= dailyLimitCap) {
           setLimitReached(true);
         }
       }, 300);
@@ -688,7 +737,43 @@ export default function DiscoverPage() {
     } finally {
       setTimeout(() => setSwiping(false), 350);
     }
-  }, [userId, swiping, currentIndex, profiles, dailyCount, supabase]);
+  }, [userId, swiping, currentIndex, profiles, dailyCount, supabase, dailyLimitCap]);
+
+  /* --- Unlock extra profiles with points --- */
+  const handleUnlockMore = useCallback(async () => {
+    if (!userId || unlocking || pointsBalance < DAILY_UNLOCK_COST) return;
+    setUnlocking(true);
+    try {
+      // Debit points
+      await supabase.from('points_transactions').insert({
+        user_id: userId,
+        amount: -DAILY_UNLOCK_COST,
+        type: 'unlock_daily',
+        description: 'Unlocked 15 extra daily profiles',
+      });
+
+      const newBalance = pointsBalance - DAILY_UNLOCK_COST;
+      await supabase
+        .from('users')
+        .update({ points_balance: newBalance })
+        .eq('id', userId);
+
+      setPointsBalance(newBalance);
+      setDailyLimitCap((prev) => prev + 15);
+      setLimitReached(false);
+
+      // Reload profiles with the new cap
+      // The loadProfiles callback will use the updated dailyLimitCap via state
+      // We need to reload after state settles
+      setTimeout(() => {
+        loadProfiles();
+      }, 100);
+    } catch (err) {
+      console.error('Failed to unlock:', err);
+    } finally {
+      setUnlocking(false);
+    }
+  }, [userId, unlocking, pointsBalance, supabase, loadProfiles]);
 
   /* --- Keyboard shortcuts --- */
   useEffect(() => {
@@ -721,12 +806,16 @@ export default function DiscoverPage() {
           </Link>
           <span className="hidden md:block font-display text-lg font-bold text-gold-100">Discover</span>
           <div className="flex items-center gap-2">
+            <Link href="/shop" className="flex items-center gap-1 rounded-full bg-gold-400/10 border border-gold-400/15 px-2.5 py-1 transition-colors hover:bg-gold-400/15">
+              <Coins className="h-3 w-3 text-gold-400" />
+              <span className="text-[11px] font-bold text-gold-300">{pointsBalance}</span>
+            </Link>
             <span className="text-xs text-gold-200/30 font-medium">
-              {DAILY_LIMIT - dailyCount} left today
+              {dailyLimitCap - dailyCount} left today
             </span>
             <div className="h-4 w-px bg-gold-400/10" />
             <div className="flex gap-0.5">
-              {Array.from({ length: DAILY_LIMIT }).map((_, i) => (
+              {Array.from({ length: Math.min(dailyLimitCap, 25) }).map((_, i) => (
                 <div
                   key={i}
                   className={`h-1.5 w-1.5 rounded-full transition-colors ${
@@ -745,7 +834,11 @@ export default function DiscoverPage() {
           {loading ? (
             <Spinner />
           ) : limitReached ? (
-            <DailyLimitReached />
+            <DailyLimitReached
+              pointsBalance={pointsBalance}
+              onUnlock={handleUnlockMore}
+              unlocking={unlocking}
+            />
           ) : !hasMore ? (
             <EmptyState />
           ) : (
