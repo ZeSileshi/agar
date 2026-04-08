@@ -319,61 +319,132 @@ function analyzePalmLines(imageData: ImageData): PalmReading {
 function HandOutlineOverlay() {
   return (
     <svg
-      viewBox="0 0 300 400"
+      viewBox="0 0 400 520"
       className="absolute inset-0 w-full h-full pointer-events-none"
       fill="none"
-      style={{ maxWidth: '85%', maxHeight: '75%', margin: 'auto', top: '5%', left: 0, right: 0 }}
+      style={{ maxWidth: '88%', maxHeight: '78%', margin: 'auto', top: '3%', left: 0, right: 0 }}
     >
-      {/* Outer palm silhouette - dashed gold outline */}
+      {/* Realistic open palm (palm-up, fingers spread) */}
+      {/* Pinky finger */}
       <path
-        d="M80 370 C65 300, 40 230, 45 170 C48 135, 55 115, 65 90 C72 70, 78 45, 78 28
-           C78 15, 86 10, 92 16 C98 28, 96 50, 94 65
-           L108 35 C108 20, 118 13, 125 20 C132 32, 126 58, 122 72
-           L140 28 C140 12, 150 7, 158 15 C165 30, 157 62, 150 78
-           L165 42 C165 28, 174 23, 181 32 C188 45, 182 72, 176 90
-           C200 85, 215 100, 222 125 C230 155, 228 195, 218 230
-           C208 270, 185 320, 165 370 Z"
-        stroke="rgba(212, 165, 74, 0.6)"
+        d="M92 210 C88 185, 84 155, 82 130 C80 112, 78 90, 80 72
+           C81 58, 88 50, 96 50 C104 50, 110 58, 111 72
+           C113 90, 111 112, 110 130 C109 150, 108 175, 108 200"
+        stroke="rgba(212, 165, 74, 0.55)"
+        strokeWidth="2"
+        strokeDasharray="8 5"
+        strokeLinecap="round"
+      />
+      {/* Ring finger */}
+      <path
+        d="M128 195 C126 165, 124 130, 122 100 C120 75, 118 48, 120 28
+           C121 14, 130 6, 140 6 C150 6, 158 14, 159 28
+           C161 48, 159 75, 157 100 C155 130, 154 165, 153 195"
+        stroke="rgba(212, 165, 74, 0.55)"
+        strokeWidth="2"
+        strokeDasharray="8 5"
+        strokeLinecap="round"
+      />
+      {/* Middle finger (tallest) */}
+      <path
+        d="M172 190 C170 155, 168 115, 167 80 C166 55, 165 30, 168 10
+           C169 -2, 180 -8, 192 -8 C204 -8, 214 -2, 215 10
+           C218 30, 216 55, 215 80 C214 115, 212 155, 210 190"
+        stroke="rgba(212, 165, 74, 0.55)"
+        strokeWidth="2"
+        strokeDasharray="8 5"
+        strokeLinecap="round"
+      />
+      {/* Index finger */}
+      <path
+        d="M228 195 C227 168, 226 135, 227 105 C228 80, 230 52, 234 32
+           C236 18, 246 10, 256 10 C266 10, 275 18, 277 32
+           C280 52, 280 80, 279 105 C278 135, 276 168, 272 200"
+        stroke="rgba(212, 165, 74, 0.55)"
+        strokeWidth="2"
+        strokeDasharray="8 5"
+        strokeLinecap="round"
+      />
+      {/* Thumb (angled outward) */}
+      <path
+        d="M300 270 C310 250, 320 225, 330 200 C338 180, 346 158, 350 142
+           C353 130, 348 120, 338 118 C328 116, 320 124, 316 136
+           C310 155, 302 178, 290 205"
+        stroke="rgba(212, 165, 74, 0.55)"
+        strokeWidth="2"
+        strokeDasharray="8 5"
+        strokeLinecap="round"
+      />
+      {/* Palm body — connects fingers to wrist */}
+      <path
+        d="M92 210 C85 240, 78 275, 76 305 C74 340, 80 380, 90 420
+           C100 450, 120 475, 145 490 L250 490
+           C275 475, 295 450, 305 420 C315 385, 318 345, 310 305
+           C305 280, 298 260, 290 240 C285 225, 280 212, 272 200
+           L228 195 L210 190 L172 190 L153 195 L128 195 L108 200 Z"
+        stroke="rgba(212, 165, 74, 0.55)"
         strokeWidth="2"
         strokeDasharray="8 5"
         fill="rgba(212, 165, 74, 0.03)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-
-      {/* Heart line guide */}
+      {/* Wrist */}
       <path
-        d="M72 148 C95 135, 125 128, 150 132 C175 136, 200 142, 215 138"
+        d="M125 490 L270 490"
         stroke="rgba(212, 165, 74, 0.35)"
         strokeWidth="1.5"
-        strokeDasharray="4 3"
+        strokeDasharray="6 4"
       />
-      <text x="222" y="142" fill="rgba(212, 165, 74, 0.4)" fontSize="9" fontFamily="system-ui">Heart</text>
 
-      {/* Head line guide */}
+      {/* === Palm line guides === */}
+
+      {/* Heart line — curves across upper palm below fingers */}
       <path
-        d="M70 178 C100 173, 130 170, 160 176 C180 181, 200 185, 215 180"
-        stroke="rgba(212, 165, 74, 0.35)"
+        d="M88 245 C120 228, 160 220, 195 224 C230 228, 260 238, 280 232"
+        stroke="rgba(255, 120, 120, 0.5)"
+        strokeWidth="2"
+        strokeDasharray="5 3"
+        strokeLinecap="round"
+      />
+      <text x="286" y="236" fill="rgba(255, 120, 120, 0.55)" fontSize="11" fontFamily="system-ui" fontWeight="600">Heart</text>
+
+      {/* Head line — across middle of palm */}
+      <path
+        d="M86 285 C120 275, 155 272, 190 278 C220 284, 250 292, 275 285"
+        stroke="rgba(100, 180, 255, 0.5)"
+        strokeWidth="2"
+        strokeDasharray="5 3"
+        strokeLinecap="round"
+      />
+      <text x="281" y="290" fill="rgba(100, 180, 255, 0.55)" fontSize="11" fontFamily="system-ui" fontWeight="600">Head</text>
+
+      {/* Life line — curves around thumb base */}
+      <path
+        d="M240 210 C225 240, 200 275, 175 320 C155 360, 140 400, 130 445"
+        stroke="rgba(100, 220, 140, 0.5)"
+        strokeWidth="2"
+        strokeDasharray="5 3"
+        strokeLinecap="round"
+      />
+      <text x="132" y="460" fill="rgba(100, 220, 140, 0.55)" fontSize="11" fontFamily="system-ui" fontWeight="600">Life</text>
+
+      {/* Fate line — vertical up center of palm */}
+      <path
+        d="M195 470 C193 430, 192 385, 192 345 C192 310, 193 278, 194 245"
+        stroke="rgba(200, 170, 255, 0.4)"
         strokeWidth="1.5"
-        strokeDasharray="4 3"
+        strokeDasharray="4 4"
+        strokeLinecap="round"
       />
-      <text x="222" y="184" fill="rgba(212, 165, 74, 0.4)" fontSize="9" fontFamily="system-ui">Head</text>
+      <text x="200" y="390" fill="rgba(200, 170, 255, 0.45)" fontSize="10" fontFamily="system-ui" fontWeight="500">Fate</text>
 
-      {/* Life line guide */}
-      <path
-        d="M95 120 C82 150, 70 190, 68 230 C66 270, 70 310, 80 345"
-        stroke="rgba(212, 165, 74, 0.35)"
-        strokeWidth="1.5"
-        strokeDasharray="4 3"
-      />
-      <text x="38" y="250" fill="rgba(212, 165, 74, 0.4)" fontSize="9" fontFamily="system-ui">Life</text>
-
-      {/* Fate line guide */}
-      <path
-        d="M148 340 C146 300, 148 260, 150 230 C152 200, 151 175, 153 148"
-        stroke="rgba(212, 165, 74, 0.25)"
-        strokeWidth="1.2"
-        strokeDasharray="3 4"
-      />
-      <text x="157" y="250" fill="rgba(212, 165, 74, 0.3)" fontSize="9" fontFamily="system-ui">Fate</text>
+      {/* Finger labels (small) */}
+      <text x="86" y="46" fill="rgba(212, 165, 74, 0.3)" fontSize="8" fontFamily="system-ui" textAnchor="middle">Pinky</text>
+      <text x="140" y="0" fill="rgba(212, 165, 74, 0.3)" fontSize="8" fontFamily="system-ui" textAnchor="middle">Ring</text>
+      <text x="192" y="-14" fill="rgba(212, 165, 74, 0.3)" fontSize="8" fontFamily="system-ui" textAnchor="middle">Middle</text>
+      <text x="256" y="4" fill="rgba(212, 165, 74, 0.3)" fontSize="8" fontFamily="system-ui" textAnchor="middle">Index</text>
+      <text x="346" y="114" fill="rgba(212, 165, 74, 0.3)" fontSize="8" fontFamily="system-ui" textAnchor="middle">Thumb</text>
     </svg>
   );
 }
