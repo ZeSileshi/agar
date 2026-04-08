@@ -158,6 +158,19 @@ export interface AstrologyProfile {
 
 /* ---------- Overall Compatibility Score ---------- */
 
+import type { PalmReading } from './palmistry';
+import { palmistryCompatibility } from './palmistry';
+
+export interface CompatibilityResult {
+  overall: number;
+  western: number;
+  chinese: number;
+  profile: number;
+  palmistry: number;
+  palmInsight: string | null;
+  breakdown: Record<string, number>;
+}
+
 export function computeOverallCompatibility(
   dob1: string,
   dob2: string,
@@ -165,14 +178,9 @@ export function computeOverallCompatibility(
   interests2: string[] = [],
   hasPalm1 = false,
   hasPalm2 = false,
-): {
-  overall: number;
-  western: number;
-  chinese: number;
-  profile: number;
-  palmistry: number;
-  breakdown: Record<string, number>;
-} {
+  palmReading1?: PalmReading | null,
+  palmReading2?: PalmReading | null,
+): CompatibilityResult {
   const p1 = getAstrologyProfile(dob1);
   const p2 = getAstrologyProfile(dob2);
 
@@ -192,14 +200,33 @@ export function computeOverallCompatibility(
     profile = Math.max(30, Math.min(95, profile)); // clamp
   }
 
-  // Palmistry bonus (both users have palm scans = +5 bonus to overall)
-  const palmistry = hasPalm1 && hasPalm2 ? 75 : hasPalm1 || hasPalm2 ? 60 : 50;
+  // Real palmistry scoring when both users have palm readings
+  const hasRealPalm = !!(palmReading1 && palmReading2);
+  let palmistry: number;
+  let palmInsight: string | null = null;
+
+  if (hasRealPalm) {
+    const palmResult = palmistryCompatibility(palmReading1!, palmReading2!);
+    palmistry = palmResult.score;
+    palmInsight = palmResult.summaryInsight;
+  } else {
+    // Fallback: basic bonus for having palm photos
+    palmistry = hasPalm1 && hasPalm2 ? 75 : hasPalm1 || hasPalm2 ? 60 : 50;
+  }
 
   // Weighted average
-  // Weights: western 25%, chinese 15%, profile 45%, palmistry 15%
-  const overall = Math.round(
-    western * 0.25 + chinese * 0.15 + profile * 0.45 + palmistry * 0.15
-  );
+  // When real palm data is available: western 20%, chinese 10%, profile 35%, palmistry 35%
+  // When no real palm data: western 25%, chinese 15%, profile 45%, palmistry 15%
+  let overall: number;
+  if (hasRealPalm) {
+    overall = Math.round(
+      western * 0.20 + chinese * 0.10 + profile * 0.35 + palmistry * 0.35
+    );
+  } else {
+    overall = Math.round(
+      western * 0.25 + chinese * 0.15 + profile * 0.45 + palmistry * 0.15
+    );
+  }
 
   return {
     overall: Math.max(20, Math.min(99, overall)),
@@ -207,6 +234,7 @@ export function computeOverallCompatibility(
     chinese,
     profile,
     palmistry,
+    palmInsight,
     breakdown: { western, chinese, profile, palmistry },
   };
 }

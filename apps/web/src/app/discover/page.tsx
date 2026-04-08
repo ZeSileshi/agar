@@ -13,6 +13,8 @@ import {
   chineseZodiacCompatibility,
   computeOverallCompatibility,
 } from '@/lib/astrology';
+import type { PalmReading } from '@/lib/palmistry';
+import { isValidPalmReading } from '@/lib/palmistry';
 import AppNav from '@/components/AppNav';
 
 /* ---------- types ---------- */
@@ -29,6 +31,7 @@ interface ProfileCard {
   location_city: string | null;
   photo_url: string | null;
   compatibility_score: number | null;
+  palm_insight: string | null;
 }
 
 /* ---------- helpers ---------- */
@@ -246,6 +249,15 @@ function ProfileCardView({
                 </div>
               );
             })()}
+
+            {/* Palmistry insight */}
+            {profile.palm_insight && (
+              <div className="pt-1">
+                <span className="text-[11px] text-gold-200/50">
+                  <span className="mr-1">&#x1F932;</span>Palm: {profile.palm_insight}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -336,6 +348,7 @@ export default function DiscoverPage() {
   const [limitReached, setLimitReached] = useState(false);
   const [userType, setUserType] = useState<'direct' | 'referrer'>('direct');
   const [myDateOfBirth, setMyDateOfBirth] = useState<string | null>(null);
+  const [myPalmReading, setMyPalmReading] = useState<PalmReading | null>(null);
 
   // Match modal state
   const [matchModal, setMatchModal] = useState<{
@@ -366,6 +379,12 @@ export default function DiscoverPage() {
         const { data: myProfile } = await supabase.from('profiles').select('date_of_birth').eq('user_id', user.id).single();
         if (myProfile?.date_of_birth) {
           setMyDateOfBirth(myProfile.date_of_birth);
+        }
+
+        // Load user's palm reading for palmistry compatibility
+        const { data: myBirthData } = await supabase.from('birth_data').select('palm_reading').eq('user_id', user.id).single();
+        if (myBirthData?.palm_reading && isValidPalmReading(myBirthData.palm_reading)) {
+          setMyPalmReading(myBirthData.palm_reading as PalmReading);
         }
       } catch {
         router.push('/auth/login');
@@ -497,14 +516,31 @@ export default function DiscoverPage() {
         myHasPalm = (palmFiles ?? []).length > 0;
       } catch { /* ignore */ }
 
+      // Load palm readings for candidates
+      const palmReadingMap = new Map<string, PalmReading>();
+      try {
+        const { data: candidateBirthData } = await supabase
+          .from('birth_data')
+          .select('user_id, palm_reading')
+          .in('user_id', candidateUserIds);
+        (candidateBirthData ?? []).forEach((bd: any) => {
+          if (bd.palm_reading && isValidPalmReading(bd.palm_reading)) {
+            palmReadingMap.set(bd.user_id, bd.palm_reading as PalmReading);
+          }
+        });
+      } catch { /* ignore */ }
+
       const scoreMap = new Map<string, number>();
+      const insightMap = new Map<string, string | null>();
       const scoresToStore: Array<{ user1_id: string; user2_id: string; overall_score: number; western_score: number; chinese_score: number; profile_score: number; palmistry_score: number; confidence: number }> = [];
 
       for (const p of (candidateProfiles ?? [])) {
         const theirDob = p.date_of_birth ?? '';
         const theirInterests: string[] = p.interests ?? [];
-        const result = computeOverallCompatibility(myDob, theirDob, myInterests, theirInterests, myHasPalm, false);
+        const theirPalmReading = palmReadingMap.get(p.user_id as string) ?? null;
+        const result = computeOverallCompatibility(myDob, theirDob, myInterests, theirInterests, myHasPalm, false, myPalmReading, theirPalmReading);
         scoreMap.set(p.user_id as string, result.overall);
+        insightMap.set(p.user_id as string, result.palmInsight);
 
         const sorted = [userId, p.user_id as string].sort();
         const u1 = sorted[0]!;
@@ -539,6 +575,7 @@ export default function DiscoverPage() {
         location_city: p.location_city,
         photo_url: photoMap.get(p.user_id as string) ?? null,
         compatibility_score: scoreMap.get(p.user_id as string) ?? null,
+        palm_insight: insightMap.get(p.user_id as string) ?? null,
       }));
 
       cards.sort((a, b) => {

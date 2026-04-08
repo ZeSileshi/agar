@@ -6,6 +6,14 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
 import { getAstrologyProfile } from '@/lib/astrology';
+import type { PalmReading, HeartLineType, HeadLineType, LifeLineType, FateLineType } from '@/lib/palmistry';
+import {
+  HEART_LINE_OPTIONS,
+  HEAD_LINE_OPTIONS,
+  LIFE_LINE_OPTIONS,
+  FATE_LINE_OPTIONS,
+  isValidPalmReading,
+} from '@/lib/palmistry';
 import AppNav from '@/components/AppNav';
 
 /* ------------------------------------------------------------------ */
@@ -145,6 +153,8 @@ export default function ProfilePage() {
   const [palmUrl, setPalmUrl] = useState<string | null>(null);
   const [palmUploading, setPalmUploading] = useState(false);
   const palmInputRef = useRef<HTMLInputElement | null>(null);
+  const [palmReading, setPalmReading] = useState<PalmReading | null>(null);
+  const [palmActiveSection, setPalmActiveSection] = useState<number>(0);
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -218,6 +228,10 @@ export default function ProfilePage() {
             birth_city: bRow.birth_city ?? '',
             birth_country: bRow.birth_country ?? '',
           });
+          // Load palm reading data
+          if (bRow.palm_reading && isValidPalmReading(bRow.palm_reading)) {
+            setPalmReading(bRow.palm_reading as PalmReading);
+          }
         }
 
         // Load photos
@@ -302,7 +316,7 @@ export default function ProfilePage() {
       if (pErr) throw pErr;
 
       // Upsert birth data
-      const birthPayload = {
+      const birthPayload: Record<string, unknown> = {
         user_id: userId,
         date_of_birth: profile.date_of_birth
           ? new Date(profile.date_of_birth).toISOString()
@@ -310,6 +324,7 @@ export default function ProfilePage() {
         time_of_birth: birth.time_of_birth || null,
         birth_city: birth.birth_city || null,
         birth_country: birth.birth_country || null,
+        palm_reading: palmReading ?? null,
         updated_at: new Date().toISOString(),
       };
 
@@ -326,7 +341,7 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  }, [userId, profile, birth]);
+  }, [userId, profile, birth, palmReading]);
 
   /* ---- Photo upload ---- */
   const handlePhotoSelect = useCallback(
@@ -911,6 +926,192 @@ export default function ProfilePage() {
                   />
                 </div>
 
+                {/* --- Palm Line Traits Questionnaire --- */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gold-200/70">Palm Line Reading</h3>
+                    {palmReading && (
+                      <span className="text-[11px] font-medium text-emerald-400/80 bg-emerald-400/8 border border-emerald-400/15 rounded-full px-2.5 py-0.5">
+                        Complete
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl bg-gold-400/5 border border-gold-400/10 p-3">
+                    <p className="text-xs text-gold-200/50 leading-relaxed">
+                      Identify your palm line traits below. Look at your palm (or the photo you uploaded) and select the closest match for each line.
+                      This powers our palmistry-based compatibility matching.
+                    </p>
+                  </div>
+
+                  {/* Accordion-style sections for each palm line */}
+                  {[
+                    {
+                      title: 'Heart Line',
+                      subtitle: 'Emotional life & relationships',
+                      icon: (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                        </svg>
+                      ),
+                      options: HEART_LINE_OPTIONS,
+                      value: palmReading?.heartLine ?? null,
+                      onChange: (val: string) => setPalmReading(prev => ({
+                        heartLine: val as HeartLineType,
+                        headLine: prev?.headLine ?? 'long_straight',
+                        lifeLine: prev?.lifeLine ?? 'long_deep',
+                        fateLine: prev?.fateLine ?? null,
+                      })),
+                    },
+                    {
+                      title: 'Head Line',
+                      subtitle: 'Intellect & communication',
+                      icon: (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                        </svg>
+                      ),
+                      options: HEAD_LINE_OPTIONS,
+                      value: palmReading?.headLine ?? null,
+                      onChange: (val: string) => setPalmReading(prev => ({
+                        heartLine: prev?.heartLine ?? 'long_curved',
+                        headLine: val as HeadLineType,
+                        lifeLine: prev?.lifeLine ?? 'long_deep',
+                        fateLine: prev?.fateLine ?? null,
+                      })),
+                    },
+                    {
+                      title: 'Life Line',
+                      subtitle: 'Vitality & life energy',
+                      icon: (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+                        </svg>
+                      ),
+                      options: LIFE_LINE_OPTIONS,
+                      value: palmReading?.lifeLine ?? null,
+                      onChange: (val: string) => setPalmReading(prev => ({
+                        heartLine: prev?.heartLine ?? 'long_curved',
+                        headLine: prev?.headLine ?? 'long_straight',
+                        lifeLine: val as LifeLineType,
+                        fateLine: prev?.fateLine ?? null,
+                      })),
+                    },
+                    {
+                      title: 'Fate Line',
+                      subtitle: 'Life direction (optional -- not everyone has one)',
+                      icon: (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                        </svg>
+                      ),
+                      options: FATE_LINE_OPTIONS,
+                      value: palmReading?.fateLine ?? null,
+                      onChange: (val: string) => setPalmReading(prev => ({
+                        heartLine: prev?.heartLine ?? 'long_curved',
+                        headLine: prev?.headLine ?? 'long_straight',
+                        lifeLine: prev?.lifeLine ?? 'long_deep',
+                        fateLine: val as FateLineType,
+                      })),
+                      allowNone: true,
+                    },
+                  ].map((section, sIdx) => (
+                    <div key={section.title} className="rounded-xl border border-gold-400/12 bg-white/[0.02] overflow-hidden">
+                      {/* Section header (accordion toggle) */}
+                      <button
+                        type="button"
+                        onClick={() => setPalmActiveSection(palmActiveSection === sIdx ? -1 : sIdx)}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+                      >
+                        <span className={`${section.value ? 'text-gold-400' : 'text-gold-200/30'} transition-colors`}>
+                          {section.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gold-100">{section.title}</p>
+                          <p className="text-[11px] text-gold-200/40 truncate">{section.subtitle}</p>
+                        </div>
+                        {section.value && (
+                          <span className="text-[11px] font-medium text-emerald-400/70 bg-emerald-400/8 border border-emerald-400/12 rounded-full px-2 py-0.5 shrink-0">
+                            Selected
+                          </span>
+                        )}
+                        <svg
+                          className={`w-4 h-4 text-gold-200/30 transition-transform shrink-0 ${palmActiveSection === sIdx ? 'rotate-180' : ''}`}
+                          fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Expanded option cards */}
+                      {palmActiveSection === sIdx && (
+                        <div className="px-4 pb-4 space-y-2">
+                          {/* Palm line reference illustration */}
+                          <div className="rounded-lg bg-navy-900/50 border border-gold-400/8 p-3 mb-3">
+                            <PalmLineDiagram lineType={section.title.toLowerCase().replace(' ', '_')} />
+                            <p className="text-[11px] text-gold-200/35 mt-2 text-center">
+                              Look at your palm and find the {section.title.toLowerCase()} highlighted above
+                            </p>
+                          </div>
+
+                          {section.allowNone && (
+                            <button
+                              type="button"
+                              onClick={() => setPalmReading(prev => prev ? ({
+                                ...prev,
+                                fateLine: null,
+                              }) : null)}
+                              className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${
+                                section.value === null && palmReading
+                                  ? 'border-gold-400/30 bg-gold-400/8'
+                                  : 'border-gold-400/8 bg-white/[0.01] hover:border-gold-400/15 hover:bg-white/[0.02]'
+                              }`}
+                            >
+                              <div className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                                section.value === null && palmReading ? 'border-gold-400 bg-gold-400' : 'border-gold-200/20'
+                              }`}>
+                                {section.value === null && palmReading && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-navy-950" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gold-200/70">I don&apos;t have this line</p>
+                                <p className="text-[11px] text-gold-200/35 mt-0.5">Not everyone has a visible fate line</p>
+                              </div>
+                            </button>
+                          )}
+
+                          {section.options.map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => section.onChange(opt.value)}
+                              className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${
+                                section.value === opt.value
+                                  ? 'border-gold-400/30 bg-gold-400/8'
+                                  : 'border-gold-400/8 bg-white/[0.01] hover:border-gold-400/15 hover:bg-white/[0.02]'
+                              }`}
+                            >
+                              <div className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                                section.value === opt.value ? 'border-gold-400 bg-gold-400' : 'border-gold-200/20'
+                              }`}>
+                                {section.value === opt.value && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-navy-950" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gold-100">{opt.label}</p>
+                                <p className="text-[11px] text-gold-200/40 mt-0.5 leading-relaxed">{opt.description}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
                 {/* --- Astrology Summary Section --- */}
                 <div className="space-y-3 pt-2">
                   <h3 className="text-sm font-semibold text-gold-200/70">Your Astrology Profile</h3>
@@ -1292,5 +1493,97 @@ function FieldGroup({
       </label>
       {children}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Palm Line Diagram — SVG illustration of a palm with highlighted line */
+/* ------------------------------------------------------------------ */
+
+function PalmLineDiagram({ lineType }: { lineType: string }) {
+  // Colors for the highlighted line
+  const activeColor = '#D4A54A'; // gold-400
+  const mutedColor = 'rgba(212, 165, 74, 0.15)';
+
+  const isHeart = lineType === 'heart_line';
+  const isHead = lineType === 'head_line';
+  const isLife = lineType === 'life_line';
+  const isFate = lineType === 'fate_line';
+
+  return (
+    <svg viewBox="0 0 200 240" className="w-full max-w-[180px] mx-auto" fill="none">
+      {/* Palm outline */}
+      <path
+        d="M55 230 C45 180, 30 140, 35 100 C38 75, 42 65, 50 50 C55 40, 60 25, 60 15
+           C60 8, 65 5, 70 8 C75 15, 73 30, 72 40
+           L80 20 C80 10, 87 5, 92 10 C97 18, 93 35, 90 45
+           L100 15 C100 5, 108 2, 113 8 C118 18, 112 40, 108 50
+           L118 25 C118 15, 125 12, 130 18 C135 28, 130 48, 125 60
+           C145 55, 155 65, 160 85 C165 105, 165 130, 155 160
+           C148 185, 130 210, 115 230 Z"
+        fill="rgba(212, 165, 74, 0.04)"
+        stroke="rgba(212, 165, 74, 0.2)"
+        strokeWidth="1.5"
+      />
+
+      {/* Heart Line (top horizontal curve) */}
+      <path
+        d="M52 88 C65 78, 85 72, 100 75 C115 78, 130 82, 148 80"
+        stroke={isHeart ? activeColor : mutedColor}
+        strokeWidth={isHeart ? 2.5 : 1.2}
+        strokeLinecap="round"
+        opacity={isHeart ? 1 : 0.5}
+      />
+      {isHeart && (
+        <text x="155" y="83" fill={activeColor} fontSize="8" fontWeight="600">Heart</text>
+      )}
+
+      {/* Head Line (middle horizontal curve) */}
+      <path
+        d="M50 108 C70 105, 90 102, 110 108 C125 112, 140 115, 150 112"
+        stroke={isHead ? activeColor : mutedColor}
+        strokeWidth={isHead ? 2.5 : 1.2}
+        strokeLinecap="round"
+        opacity={isHead ? 1 : 0.5}
+      />
+      {isHead && (
+        <text x="155" y="115" fill={activeColor} fontSize="8" fontWeight="600">Head</text>
+      )}
+
+      {/* Life Line (curved arc from between thumb and index) */}
+      <path
+        d="M72 70 C62 90, 52 115, 50 140 C48 165, 50 190, 55 210"
+        stroke={isLife ? activeColor : mutedColor}
+        strokeWidth={isLife ? 2.5 : 1.2}
+        strokeLinecap="round"
+        opacity={isLife ? 1 : 0.5}
+      />
+      {isLife && (
+        <text x="28" y="155" fill={activeColor} fontSize="8" fontWeight="600">Life</text>
+      )}
+
+      {/* Fate Line (vertical from base of palm toward middle finger) */}
+      <path
+        d="M100 210 C98 185, 100 160, 102 140 C104 120, 103 100, 105 85"
+        stroke={isFate ? activeColor : mutedColor}
+        strokeWidth={isFate ? 2.5 : 1.2}
+        strokeLinecap="round"
+        strokeDasharray={isFate ? 'none' : '4 3'}
+        opacity={isFate ? 1 : 0.4}
+      />
+      {isFate && (
+        <text x="112" y="155" fill={activeColor} fontSize="8" fontWeight="600">Fate</text>
+      )}
+
+      {/* Labels when no specific line is highlighted */}
+      {!isHeart && !isHead && !isLife && !isFate && (
+        <>
+          <text x="155" y="83" fill="rgba(212,165,74,0.3)" fontSize="7">Heart</text>
+          <text x="155" y="115" fill="rgba(212,165,74,0.3)" fontSize="7">Head</text>
+          <text x="28" y="155" fill="rgba(212,165,74,0.3)" fontSize="7">Life</text>
+          <text x="112" y="155" fill="rgba(212,165,74,0.3)" fontSize="7">Fate</text>
+        </>
+      )}
+    </svg>
   );
 }
