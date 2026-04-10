@@ -22,7 +22,6 @@ const content = {
       title: 'Let the cosmos find',
       titleAccent: 'your person.',
       subtitle: 'Agar combines three astrology systems, personality science, and cultural intelligence to find matches that actually make sense.',
-      referral: 'Know someone who deserves love? You can refer a friend or family member — help them find their match.',
       cta: 'Start matching — it\u2019s free',
       ctaSecondary: 'How it works',
       appStore: 'App Store',
@@ -119,7 +118,6 @@ const content = {
       title: 'Deja que el cosmos encuentre',
       titleAccent: 'a tu persona.',
       subtitle: 'Agar combina tres sistemas astrol\u00F3gicos, ciencia de la personalidad e inteligencia cultural para encontrar coincidencias que realmente tienen sentido.',
-      referral: '\u00BFConoces a alguien que merece amor? Puedes referir a un amigo o familiar \u2014 ay\u00FAdalo a encontrar su pareja.',
       cta: 'Comienza gratis',
       ctaSecondary: 'C\u00F3mo funciona',
       appStore: 'App Store',
@@ -485,19 +483,19 @@ export default function LandingPage() {
                 {t.hero.subtitle}
               </p>
 
-              {/* Referral callout */}
+              {/* Dual path callout */}
               <div
-                className="animate-fade-up mt-4 flex items-start gap-3 rounded-2xl border border-gold-400/15 bg-gold-400/[0.04] p-4 text-left"
+                className="animate-fade-up mt-4 flex items-center gap-3 justify-center lg:justify-start"
                 style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
               >
-                <span className="text-xl mt-0.5">♥</span>
-                <div>
-                  <p className="text-sm font-semibold text-gold-200">
-                    Know someone who deserves love?
-                  </p>
-                  <p className="text-xs text-gold-200/40 leading-relaxed mt-1">
-                    {t.hero.referral}
-                  </p>
+                <div className="flex items-center gap-2 rounded-full border border-gold-400/15 bg-gold-400/[0.04] px-4 py-2.5">
+                  <span className="text-sm">✦</span>
+                  <span className="text-xs font-semibold text-gold-200/60">Find your match</span>
+                </div>
+                <span className="text-xs text-gold-200/25">or</span>
+                <div className="flex items-center gap-2 rounded-full border border-gold-400/15 bg-gold-400/[0.04] px-4 py-2.5">
+                  <span className="text-sm">♥</span>
+                  <span className="text-xs font-semibold text-gold-200/60">Refer someone you know</span>
                 </div>
               </div>
 

@@ -58,14 +58,18 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
               Agar combines three astrology systems, personality science, and cultural intelligence to find matches that actually make sense.
             </Text>
 
-            {/* Referral callout */}
-            <View style={styles.referralCard}>
-              <Text style={styles.referralIcon}>♥</Text>
-              <View style={styles.referralTextWrap}>
-                <Text style={styles.referralTitle}>Know someone who deserves love?</Text>
-                <Text style={styles.referralDesc}>
-                  You can refer a friend or family member — help them find their match, even if you're not looking yourself.
-                </Text>
+            {/* Dual path callout */}
+            <View style={styles.dualPathRow}>
+              <View style={styles.dualPathCard}>
+                <Text style={styles.dualPathIcon}>✦</Text>
+                <Text style={styles.dualPathLabel}>Find your match</Text>
+              </View>
+              <View style={styles.dualPathDivider}>
+                <Text style={styles.dualPathOr}>or</Text>
+              </View>
+              <View style={styles.dualPathCard}>
+                <Text style={styles.dualPathIcon}>♥</Text>
+                <Text style={styles.dualPathLabel}>Refer someone you know</Text>
               </View>
             </View>
           </View>
@@ -244,33 +248,39 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.body, fontSize: 16, lineHeight: 24,
     color: 'rgba(232,221,208,0.5)', marginBottom: 16,
   },
-  referralCard: {
+  dualPathRow: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: 10,
+  },
+  dualPathCard: {
+    flex: 1,
     backgroundColor: 'rgba(212,165,74,0.06)',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: 'rgba(212,165,74,0.15)',
+    alignItems: 'center',
+    gap: 6,
   },
-  referralIcon: {
-    fontSize: 22,
-    marginTop: 2,
+  dualPathIcon: {
+    fontSize: 18,
+    color: colors.gold,
   },
-  referralTextWrap: {
-    flex: 1,
-    gap: 4,
-  },
-  referralTitle: {
+  dualPathLabel: {
     fontFamily: fontFamily.bodySemibold,
-    fontSize: 14,
-    color: colors.goldLight,
+    fontSize: 12,
+    color: 'rgba(232,221,208,0.6)',
+    textAlign: 'center',
   },
-  referralDesc: {
+  dualPathDivider: {
+    justifyContent: 'center',
+  },
+  dualPathOr: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    color: 'rgba(232,221,208,0.4)',
-    lineHeight: 19,
+    fontSize: 12,
+    color: 'rgba(232,221,208,0.25)',
   },
   statsRow: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
