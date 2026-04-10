@@ -161,6 +161,10 @@ export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
   ).current;
 
   const swipeOut = (direction: 'left' | 'right' | 'up') => {
+    // Capture the candidate NOW before the animation completes
+    const candidate = candidates[currentIndex];
+    const action = direction === 'left' ? 'pass' : direction === 'right' ? 'like' : 'super_like';
+
     const x = direction === 'left' ? -SCREEN_WIDTH * 1.5 : direction === 'right' ? SCREEN_WIDTH * 1.5 : 0;
     const y = direction === 'up' ? -SCREEN_HEIGHT : 0;
 
@@ -169,22 +173,15 @@ export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
       duration: 300,
       useNativeDriver: false,
     }).start(() => {
-      const action = direction === 'left' ? 'pass' : direction === 'right' ? 'like' : 'super_like';
-      handleSwipeAction(action);
+      // Simulate match on like/super_like with 30% chance
+      if ((action === 'like' || action === 'super_like') && candidate && Math.random() < 0.3) {
+        setMatchModal(candidate);
+      }
+
+      position.setValue({ x: 0, y: 0 });
+      setCurrentIndex((prev) => prev + 1);
+      setDailyViewed((prev) => prev + 1);
     });
-  };
-
-  const handleSwipeAction = (action: 'like' | 'pass' | 'super_like') => {
-    const candidate = candidates[currentIndex];
-
-    // Simulate match on like/super_like with 30% chance
-    if ((action === 'like' || action === 'super_like') && candidate && Math.random() < 0.3) {
-      setMatchModal(candidate);
-    }
-
-    position.setValue({ x: 0, y: 0 });
-    setCurrentIndex((prev) => prev + 1);
-    setDailyViewed((prev) => prev + 1);
   };
 
   const handleUnlock = () => {
