@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
+import { usePointsStore } from '../store/points-store';
 import type { MatchCandidate } from '@agar/shared';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -120,7 +121,7 @@ export default function DiscoveryScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dailyViewed, setDailyViewed] = useState(0);
   const [dailyCap, setDailyCap] = useState(DAILY_LIMIT);
-  const [points, setPoints] = useState(45);
+  const { balance: points, spendPoints } = usePointsStore();
   const [matchModal, setMatchModal] = useState<MatchCandidate | null>(null);
   const [mode, setMode] = useState<'self' | 'referral'>('self');
 
@@ -183,11 +184,11 @@ export default function DiscoveryScreen() {
   };
 
   const handleUnlock = () => {
-    if (points < UNLOCK_COST) {
+    const spent = spendPoints(UNLOCK_COST);
+    if (!spent) {
       Alert.alert('Not enough points', `You need ${UNLOCK_COST} points to unlock more profiles. Visit the Shop to buy points.`);
       return;
     }
-    setPoints((prev) => prev - UNLOCK_COST);
     setDailyCap((prev) => prev + UNLOCK_COUNT);
     Alert.alert('Unlocked!', `${UNLOCK_COUNT} more profiles unlocked for today.`);
   };

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStripe } from '@stripe/stripe-react-native';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
+import { usePointsStore } from '../store/points-store';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -88,7 +89,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // ---------------------------------------------------------------------------
 
 export default function ShopScreen() {
-  const [points, setPoints] = useState(45);
+  const { balance: points, addPoints, spendPoints } = usePointsStore();
   const [activeCategory, setActiveCategory] = useState<GiftCategory>('All');
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [buyingPackage, setBuyingPackage] = useState<string | null>(null);
@@ -143,7 +144,7 @@ export default function ShopScreen() {
           // User cancelled — no error alert
         } else {
           // Payment successful
-          setPoints((prev) => prev + pkg.points);
+          addPoints(pkg.points);
           Alert.alert(
             'Purchase Complete!',
             `${pkg.points} points have been added to your account.`,
@@ -160,13 +161,13 @@ export default function ShopScreen() {
 
   const handleSendGift = useCallback(
     (gift: Gift) => {
-      if (gift.cost > points) return;
+      const spent = spendPoints(gift.cost);
+      if (!spent) return;
       Alert.alert('Gift Sent!', `You sent a ${gift.name} ${gift.emoji}`, [
         { text: 'OK' },
       ]);
-      setPoints((prev) => prev - gift.cost);
     },
-    [points],
+    [spendPoints],
   );
 
   // --------------------------------------------------

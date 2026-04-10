@@ -14,6 +14,7 @@ import type { ListRenderItemInfo } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
+import { usePointsStore } from '../store/points-store';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -147,7 +148,7 @@ export default function ChatScreen({ matchId: _matchId, partnerName, onBack }: C
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState('');
   const [giftSheetOpen, setGiftSheetOpen] = useState(false);
-  const [pointsBalance, setPointsBalance] = useState(250);
+  const { balance: pointsBalance, spendPoints } = usePointsStore();
   const flatListRef = useRef<FlatList<Message>>(null);
 
   /* ---- actions ---- */
@@ -169,9 +170,8 @@ export default function ChatScreen({ matchId: _matchId, partnerName, onBack }: C
 
   const sendGift = useCallback(
     (gift: Gift) => {
-      if (pointsBalance < gift.points) return;
-
-      setPointsBalance((b) => b - gift.points);
+      const spent = spendPoints(gift.points);
+      if (!spent) return;
       const msg: Message = {
         id: nextId(),
         type: 'gift',
