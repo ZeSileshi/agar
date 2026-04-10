@@ -145,7 +145,10 @@ function nextId(): string {
 /* ------------------------------------------------------------------ */
 
 // Mock conversation IDs that have existing messages (from MessagesScreen)
-const EXISTING_CONVERSATIONS = new Set(['1', '2', '3', '4', '5']);
+const EXISTING_CONVERSATIONS = new Set([
+  '1', '2', '3', '4', '5',
+  'match-001', 'match-002', 'match-003', 'match-004', 'match-005',
+]);
 
 export default function ChatScreen({ matchId, partnerName, onBack }: ChatScreenProps) {
   // New matches start with empty chat, existing conversations show mock messages
@@ -274,27 +277,25 @@ export default function ChatScreen({ matchId, partnerName, onBack }: ChatScreenP
         </View>
 
         {/* ---- Messages ---- */}
-        <FlatList
-          ref={flatListRef}
-          data={reversedMessages}
-          renderItem={renderMessage}
-          keyExtractor={keyExtractor}
-          inverted
-          contentContainerStyle={[
-            styles.messageList,
-            messages.length === 0 && styles.messageListEmpty,
-          ]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyChat}>
-              <Text style={styles.emptyChatEmoji}>✦</Text>
-              <Text style={styles.emptyChatTitle}>You matched with {partnerName}!</Text>
-              <Text style={styles.emptyChatText}>
-                Send a message to start the conversation
-              </Text>
-            </View>
-          }
-        />
+        {messages.length === 0 ? (
+          <View style={styles.emptyChat}>
+            <Text style={styles.emptyChatEmoji}>✦</Text>
+            <Text style={styles.emptyChatTitle}>You matched with {partnerName}!</Text>
+            <Text style={styles.emptyChatText}>
+              Send a message to start the conversation
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={reversedMessages}
+            renderItem={renderMessage}
+            keyExtractor={keyExtractor}
+            inverted
+            contentContainerStyle={styles.messageList}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         {/* ---- Input bar ---- */}
         <View style={styles.inputBar}>
@@ -446,15 +447,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  messageListEmpty: {
+  emptyChat: {
     flex: 1,
     justifyContent: 'center',
-  },
-  emptyChat: {
     alignItems: 'center',
     paddingHorizontal: 32,
     gap: 8,
-    transform: [{ scaleY: -1 }], // FlatList is inverted, flip content back
   },
   emptyChatEmoji: {
     fontSize: 40,

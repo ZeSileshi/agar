@@ -47,9 +47,9 @@ export default function HomeScreen() {
         return (
           <MessagesScreen
             onOpenChat={(matchId) => {
-              // Map matchId to a name from mock data
               const names: Record<string, string> = {
-                '1': 'Hanna', '2': 'Sara', '3': 'Meron', '4': 'Liya', '5': 'Bethlehem',
+                'match-001': 'Hanna', 'match-002': 'Sara', 'match-003': 'Meron',
+                'match-004': 'Liya', 'match-005': 'Bethlehem',
               };
               setChatTarget({ matchId, name: names[matchId] ?? 'Match' });
             }}
