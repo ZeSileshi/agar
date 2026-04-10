@@ -35,7 +35,14 @@
       "expo-location",
       "expo-font",
       "expo-camera",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.agar.app",
+          "enableGooglePay": true
+        }
+      ]
     ]
   }
 }
