@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
+import { useProfileStore } from '../store/profile-store';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -29,8 +30,8 @@ interface ProfileScreenProps {
 }
 
 export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
-  // Mock profile data
-  const [displayName, setDisplayName] = useState('Dawit');
+  const { firstName: storedName, primaryPhoto, photos: storedPhotos } = useProfileStore();
+  const [displayName, setDisplayName] = useState(storedName || 'Dawit');
   const [bio, setBio] = useState('Coffee lover and stargazer. Looking for someone to explore the cosmos with.');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([
     'Coffee', 'Astronomy', 'Hiking', 'Photography', 'Ethiopian Food',
@@ -38,7 +39,7 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const mockProfile = {
-    firstName: 'Dawit',
+    firstName: storedName || 'Dawit',
     age: 28,
     location: 'Addis Ababa, Ethiopia',
     gender: 'Male',
@@ -49,7 +50,10 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
     chineseEmoji: '🐉',
     palmReading: true,
     joinedDate: 'March 2026',
-    photos: [null, null, null, null, null, null],
+    photos: [
+      ...storedPhotos,
+      ...Array(Math.max(0, 6 - storedPhotos.length)).fill(null),
+    ] as (string | null)[],
   };
 
   const toggleInterest = (interest: string) => {
@@ -84,9 +88,13 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
         {/* Profile card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarWrap}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{mockProfile.firstName[0]}</Text>
-            </View>
+            {primaryPhoto ? (
+              <Image source={{ uri: primaryPhoto }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{mockProfile.firstName[0]}</Text>
+              </View>
+            )}
             <View style={styles.onlineDot} />
           </View>
           <Text style={styles.profileName}>{mockProfile.firstName}, {mockProfile.age}</Text>
@@ -132,11 +140,15 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
           <Text style={styles.sectionTitle}>Photos</Text>
           <View style={styles.photoGrid}>
             {mockProfile.photos.map((photo, i) => (
-              <TouchableOpacity key={i} style={styles.photoSlot} activeOpacity={0.7}>
-                <View style={styles.photoPlaceholder}>
-                  <Text style={styles.photoPlus}>+</Text>
-                  <Text style={styles.photoLabel}>{i < 3 ? 'Required' : 'Optional'}</Text>
-                </View>
+              <TouchableOpacity key={i} style={[styles.photoSlot, photo && styles.photoSlotFilled]} activeOpacity={0.7}>
+                {photo ? (
+                  <Image source={{ uri: photo }} style={styles.photoImage} />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <Text style={styles.photoPlus}>+</Text>
+                    <Text style={styles.photoLabel}>{i < 3 ? 'Required' : 'Optional'}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -276,6 +288,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  avatarImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 2,
+    borderColor: colors.gold,
+  },
   avatarText: {
     fontFamily: fontFamily.displayExtrabold,
     fontSize: 36,
@@ -400,6 +419,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(232,221,208,0.1)',
     borderStyle: 'dashed',
     backgroundColor: colors.surface,
+  },
+  photoSlotFilled: {
+    borderStyle: 'solid',
+    borderColor: 'rgba(212,165,74,0.2)',
+    borderWidth: 1,
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 13,
   },
   photoPlaceholder: {
     flex: 1,

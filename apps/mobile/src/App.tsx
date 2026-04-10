@@ -14,6 +14,7 @@ import {
 import { initI18n } from '@agar/i18n';
 import { colors } from './theme/colors';
 import { useAuthStore } from './store/auth-store';
+import { useProfileStore } from './store/profile-store';
 
 // Screens
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -127,7 +128,10 @@ export default function App() {
       case 'basicInfo':
         return (
           <BasicInfoScreen
-            onContinue={(_data) => setScreen('photoUpload')}
+            onContinue={(data) => {
+              useProfileStore.getState().setFirstName(data.firstName);
+              setScreen('photoUpload');
+            }}
             onBack={() => setScreen('userType')}
           />
         );
@@ -135,7 +139,10 @@ export default function App() {
       case 'photoUpload':
         return (
           <PhotoUploadScreen
-            onContinue={(_photos) => setScreen('palmScan')}
+            onContinue={(photos) => {
+              useProfileStore.getState().setPhotos(photos);
+              setScreen('palmScan');
+            }}
             onBack={() => setScreen('basicInfo')}
           />
         );
