@@ -144,8 +144,14 @@ function nextId(): string {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function ChatScreen({ matchId: _matchId, partnerName, onBack }: ChatScreenProps) {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+// Mock conversation IDs that have existing messages (from MessagesScreen)
+const EXISTING_CONVERSATIONS = new Set(['1', '2', '3', '4', '5']);
+
+export default function ChatScreen({ matchId, partnerName, onBack }: ChatScreenProps) {
+  // New matches start with empty chat, existing conversations show mock messages
+  const [messages, setMessages] = useState<Message[]>(
+    EXISTING_CONVERSATIONS.has(matchId) ? INITIAL_MESSAGES : []
+  );
   const [inputText, setInputText] = useState('');
   const [giftSheetOpen, setGiftSheetOpen] = useState(false);
   const { balance: pointsBalance, spendPoints } = usePointsStore();
@@ -274,8 +280,20 @@ export default function ChatScreen({ matchId: _matchId, partnerName, onBack }: C
           renderItem={renderMessage}
           keyExtractor={keyExtractor}
           inverted
-          contentContainerStyle={styles.messageList}
+          contentContainerStyle={[
+            styles.messageList,
+            messages.length === 0 && styles.messageListEmpty,
+          ]}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyChat}>
+              <Text style={styles.emptyChatEmoji}>✦</Text>
+              <Text style={styles.emptyChatTitle}>You matched with {partnerName}!</Text>
+              <Text style={styles.emptyChatText}>
+                Send a message to start the conversation
+              </Text>
+            </View>
+          }
         />
 
         {/* ---- Input bar ---- */}
@@ -427,6 +445,33 @@ const styles = StyleSheet.create({
   messageList: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  messageListEmpty: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  emptyChat: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    gap: 8,
+    transform: [{ scaleY: -1 }], // FlatList is inverted, flip content back
+  },
+  emptyChatEmoji: {
+    fontSize: 40,
+    color: colors.gold,
+    marginBottom: 8,
+  },
+  emptyChatTitle: {
+    fontFamily: fontFamily.displayBold,
+    fontSize: 20,
+    color: '#faf5eb',
+    textAlign: 'center',
+  },
+  emptyChatText: {
+    fontFamily: fontFamily.body,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   timestamp: {
     textAlign: 'center',
