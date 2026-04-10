@@ -21,11 +21,13 @@ import { initWebSocket } from './websocket/index.js';
 const app = express();
 const server = createServer(app);
 
-// Security middleware
-app.use(helmet());
+// Security middleware — cors must come before helmet
 app.use(cors({
   origin: config.CORS_ORIGINS,
   credentials: true,
+}));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));

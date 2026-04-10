@@ -322,14 +322,14 @@ function BuyModal({
           Get {pkg.points} Points
         </h3>
         <p className="text-sm text-gold-200/40 mb-6">
-          Purchase <span className="text-gold-300 font-semibold">{pkg.points} points</span> for <span className="text-gold-300 font-semibold">{pkg.price}</span>
+          Purchase <span className="text-gold-300 font-semibold">{pkg.points} points</span> for <span className="text-gold-300 font-semibold">{pkg.priceLabel}</span>
         </p>
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
             className="w-full rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 px-6 py-3 text-sm font-semibold text-navy-950 transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            Proceed to Payment — {pkg.price}
+            Proceed to Payment — {pkg.priceLabel}
           </button>
           <button
             onClick={onClose}
