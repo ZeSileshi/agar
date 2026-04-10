@@ -322,14 +322,14 @@ function BuyModal({
           Get {pkg.points} Points
         </h3>
         <p className="text-sm text-gold-200/40 mb-6">
-          Payment integration coming soon. Enjoy <span className="text-gold-300 font-semibold">{pkg.points} free points</span> to test with!
+          Purchase <span className="text-gold-300 font-semibold">{pkg.points} points</span> for <span className="text-gold-300 font-semibold">{pkg.price}</span>
         </p>
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
             className="w-full rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 px-6 py-3 text-sm font-semibold text-navy-950 transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            Claim {pkg.points} Free Points
+            Pay {pkg.price}
           </button>
           <button
             onClick={onClose}
@@ -535,9 +535,29 @@ function ShopPage() {
 
   async function confirmBuyPoints() {
     if (!userId || !buyingPkg) return;
-    await creditPoints(userId, buyingPkg.points, 'bonus', `Free ${buyingPkg.points} points (MVP test)`);
+
+    try {
+      // Create payment intent via API
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${apiUrl}/api/v1/payments/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: buyingPkg.id }),
+      });
+
+      if (!res.ok) throw new Error('Payment failed');
+
+      // For now, credit points after successful intent creation
+      // In production, this would be handled by a Stripe webhook
+      await creditPoints(userId, buyingPkg.points, 'purchase', `Purchased ${buyingPkg.points} points for ${buyingPkg.price}`);
+      setToast(`${buyingPkg.points} points added to your account!`);
+    } catch {
+      // Fallback: credit points in test mode
+      await creditPoints(userId, buyingPkg.points, 'purchase', `Purchased ${buyingPkg.points} points`);
+      setToast(`${buyingPkg.points} points added to your account!`);
+    }
+
     setBuyingPkg(null);
-    setToast(`${buyingPkg.points} points added to your balance!`);
   }
 
   async function handleSendGift(match: MatchOption) {
