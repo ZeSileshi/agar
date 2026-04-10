@@ -4,17 +4,34 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import DiscoveryScreen from './DiscoveryScreen';
+import MessagesScreen from './MessagesScreen';
+import ShopScreen from './ShopScreen';
+import ProfileScreen from './ProfileScreen';
+import ChatScreen from './ChatScreen';
 
-type Tab = 'discover' | 'messages' | 'profile';
+type Tab = 'discover' | 'messages' | 'shop' | 'profile';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'discover', label: 'Discover', icon: '✦' },
   { key: 'messages', label: 'Messages', icon: '💬' },
-  { key: 'profile', label: 'Profile', icon: '⚙' },
+  { key: 'shop', label: 'Shop', icon: '🛍' },
+  { key: 'profile', label: 'Profile', icon: '👤' },
 ];
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('discover');
+  const [chatTarget, setChatTarget] = useState<{ matchId: string; name: string } | null>(null);
+
+  // If in a chat, show chat screen over everything
+  if (chatTarget) {
+    return (
+      <ChatScreen
+        matchId={chatTarget.matchId}
+        partnerName={chatTarget.name}
+        onBack={() => setChatTarget(null)}
+      />
+    );
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -22,56 +39,54 @@ export default function HomeScreen() {
         return <DiscoveryScreen />;
       case 'messages':
         return (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderIcon}>💬</Text>
-            <Text style={styles.placeholderTitle}>Messages</Text>
-            <Text style={styles.placeholderText}>
-              When you match with someone, your conversations will appear here.
-            </Text>
-          </View>
+          <MessagesScreen
+            onOpenChat={(matchId) => {
+              // Map matchId to a name from mock data
+              const names: Record<string, string> = {
+                '1': 'Hanna', '2': 'Sara', '3': 'Meron', '4': 'Liya', '5': 'Bethlehem',
+              };
+              setChatTarget({ matchId, name: names[matchId] ?? 'Match' });
+            }}
+          />
         );
+      case 'shop':
+        return <ShopScreen />;
       case 'profile':
-        return (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderIcon}>⚙</Text>
-            <Text style={styles.placeholderTitle}>Your Profile</Text>
-            <Text style={styles.placeholderText}>
-              Edit your photos, bio, and preferences. Coming soon.
-            </Text>
-          </View>
-        );
+        return <ProfileScreen />;
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={styles.container}>
       <View style={styles.content}>
         {renderContent()}
       </View>
 
       {/* Bottom tab bar */}
-      <View style={styles.tabBar}>
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={styles.tabItem}
-              onPress={() => setActiveTab(tab.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
-                {tab.icon}
-              </Text>
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                {tab.label}
-              </Text>
-              {isActive && <View style={styles.tabDot} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']} style={styles.tabBarSafe}>
+        <View style={styles.tabBar}>
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={styles.tabItem}
+                onPress={() => setActiveTab(tab.key)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
+                  {tab.icon}
+                </Text>
+                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                  {tab.label}
+                </Text>
+                {isActive && <View style={styles.tabDot} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -85,6 +100,9 @@ const styles = StyleSheet.create({
   },
 
   // Tab bar
+  tabBarSafe: {
+    backgroundColor: colors.background,
+  },
   tabBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -121,30 +139,5 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: colors.gold,
     marginTop: 2,
-  },
-
-  // Placeholder tabs
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-    gap: 12,
-  },
-  placeholderIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  placeholderTitle: {
-    fontFamily: fontFamily.displayBold,
-    fontSize: 24,
-    color: '#faf5eb',
-  },
-  placeholderText: {
-    fontFamily: fontFamily.body,
-    fontSize: 15,
-    color: 'rgba(232,221,208,0.4)',
-    textAlign: 'center',
-    lineHeight: 22,
   },
 });
