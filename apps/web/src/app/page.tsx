@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 /* ------------------------------------------------------------------ */
-/*  Trilingual content                                                 */
+/*  Bilingual content                                                  */
 /* ------------------------------------------------------------------ */
 const LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -157,104 +157,6 @@ const content = {
     features: {
       label: 'Por qu\u00E9 Agar',
       title: 'No es otra app de deslizar',
-      items_MARKER_REMOVE: 'MARKER',
-      title_OLD: '\u120C\u120B \u12E8\u121B\u1295\u1248\u1323\u1320\u132D \u1218\u1270\u130D\u1260\u122A\u12EB \u12A0\u12ED\u12F0\u1208\u121D',
-      items: [
-        {
-          icon: 'astrology',
-          title: '\u1230\u120D\u1235\u1270 \u12E8\u12AE\u12A8\u1265 \u1246\u1320\u122B',
-          desc: '\u121D\u12D5\u122B\u1263\u12CA synastry\u1363 \u126C\u12F2\u12AD Guna Milan (36-point) \u12A5\u1293 \u12E8\u127B\u12ED\u1293 \u12E8\u12AE\u12A8\u1265 \u1246\u1320\u122B \u12A0\u1265\u122C\u12CD \u12ED\u1230\u122B\u1209\u1362',
-        },
-        {
-          icon: 'brain',
-          title: '\u12E8\u1263\u1205\u122A \u1233\u12ED\u1295\u1235',
-          desc: 'Big Five \u12E8\u1235\u1265\u12D5\u1293 \u121E\u12F4\u120D \u12A5\u1295\u12F0\u1275 \u12A5\u1295\u12F0\u121A\u12EB\u1235\u1261 \u12A5\u1293 \u12A5\u1295\u12F0\u121A\u130D\u1263\u1261 \u12ED\u1218\u1228\u121D\u122B\u120D\u1362',
-        },
-        {
-          icon: 'people',
-          title: '\u12E8\u121B\u1205\u1260\u1228\u1230\u1265 \u122A\u1348\u122B\u120D',
-          desc: '\u1270\u12A0\u121B\u129D \u130D\u1325\u121A\u12EB\u12CE\u127D\u1295 \u12A5\u1295\u12F2\u12EB\u130D\u1299 \u1260\u121B\u1205\u1260\u1228\u1230\u1265 \u12ED\u122D\u12F1\u1362',
-        },
-        {
-          icon: 'globe',
-          title: '\u1263\u1205\u120B\u12CA \u1265\u120D\u1205\u1290\u1275',
-          desc: '\u1263\u1205\u120D\u1295 \u12EB\u12A8\u1265\u122B\u120D\u1362 \u1260\u12A5\u1295\u130D\u120A\u12DD\u129B\u1363 \u1260\u12A0\u121B\u122D\u129B \u12A5\u1293 \u1260\u1235\u1353\u1292\u123D \u12ED\u1308\u129B\u120D\u1362',
-        },
-        {
-          icon: 'lock',
-          title: '\u130D\u120B\u12CA\u1290\u1275 \u1240\u12F3\u121A',
-          desc: '\u12E8\u1218\u120D\u12A5\u12AD\u1276\u127D \u12AE\u12F5 \u1270\u1218\u1230\u1320\u1228\u12CD\u1362 \u1218\u1228\u1303 \u12A0\u12ED\u123B\u1325\u121D\u1362 \u1218\u127B\u12CD \u12E8\u12A5\u122D\u1235\u12CE \u1290\u12CD\u1362',
-        },
-        {
-          icon: 'chat',
-          title: '\u12A5\u12CD\u1290\u1270\u129B \u12CD\u12ED\u12ED\u1276\u127D',
-          desc: '\u1260\u1270\u12AB\u12CB\u129D\u1290\u1275 \u120B\u12ED \u12E8\u1270\u1218\u1230\u1228\u1271 \u12E8\u12CD\u12ED\u12ED\u1275 \u1218\u1305\u1218\u122A\u12EB\u12CE\u127D\u1362',
-        },
-      ],
-    },
-    honesty: {
-      title: '\u1235\u1208 \u1270\u12A0\u121B\u129D\u1290\u1275 \u12A0\u132D\u122D \u121B\u1235\u1273\u12C8\u123B',
-      text: '\u1208\u1270\u123B\u1208 \u12CD\u1324\u1275 \u12E8\u120D\u12F0\u1275 \u12DD\u122D\u12DD\u122E\u127D\u1295\u1363 \u12E8\u1235\u1265\u12D5\u1293 \u1218\u120D\u1236\u127D\u1295 \u12A5\u1293 \u12E8\u12A5\u1325 \u134E\u1276\u12CE\u127D\u1295 \u1260\u1205\u120D\u121D\u1293\u12CE \u12EB\u130D\u1299\u1362',
-      disclaimer: '\u12A5\u1293\u121D \u2014 \u12A5\u1295\u1230\u122B\u12ED\u1206: \u12ED\u1205 \u12E8\u12A5\u129D \u12A0\u120D\u1310\u122A\u12DD\u121D \u1290\u12CD\u1362 \u1260\u1323\u121D \u1325\u1229 \u1290\u12CD \u130D\u1295 \u134D\u133B\u121D \u12A0\u12ED\u12F0\u1208\u121D\u1362 \u12A5\u1295\u12F0 \u1260\u1323\u121D \u1325\u1229 \u130D\u1295 \u12A0\u120F \u12E8\u1270\u1233\u1233\u1270 \u1325\u1229 \u130B\u12F0\u129B \u12A0\u12F5\u122D\u1309\u1275 \u12EB\u1235\u1261\u1275\u1362 \u2764\uFE0F',
-    },
-    cta: {
-      title: '\u1260\u12A5\u1235\u12A9 \u12E8\u121A\u1308\u1263\u12CE\u1275\u1295\n\u1208\u121B\u130D\u1298\u1275 \u12DD\u130D\u1301 \u1290\u12CE\u1275?',
-      subtitle: '\u1260\u1270\u12B3\u12CB\u129D\u1290\u1275 \u1233\u12ED\u1295\u1235 \u12A5\u12CD\u1290\u1270\u129B \u130D\u1295\u1299\u1290\u1275 \u12A8\u121A\u12EB\u130D\u1299 \u1262\u1206\u127D \u130B\u122D \u12ED\u1240\u120B\u1240\u1209\u1362',
-      button: '\u1260\u1290\u133D\u1290\u1275 \u1305\u121D\u122D',
-      emailPlaceholder: '\u12A2\u121C\u12ED\u120D\u12CE\u1295 \u12EB\u1235\u1308\u1261',
-    },
-    footer: {
-      tagline: '\u12A8\u12CB\u12AD\u1265\u1275 \u12E8\u121A\u1308\u1293\u1299\u1260\u1275\u1363 \u120D\u1266\u127D \u12E8\u121A\u1270\u1233\u1230\u1229\u1260\u1275\u1362',
-      links: ['\u1235\u1208 \u12A5\u129D', '\u130D\u120B\u12CA\u1290\u1275', '\u12CD\u120E\u127D', '\u12F5\u130B\u134D'],
-      copy: '\u00A9 2026 \u12A0\u130B\u122D. \u1201\u1209\u121D \u1218\u1265\u1276\u127D \u12E8\u1270\u1328\u1261 \u1293\u1278\u12CD\u1362',
-    },
-  },
-  es: {
-    nav: { signin: 'Iniciar', register: 'Registrarse' },
-    hero: {
-      badge: 'Astrolog\u00EDa + IA',
-      title: 'Deja que el cosmos encuentre',
-      titleAccent: 'a tu persona.',
-      subtitle: 'Agar combina tres sistemas astrol\u00F3gicos, ciencia de la personalidad e inteligencia cultural para encontrar coincidencias que realmente tienen sentido.',
-      cta: 'Comienza gratis',
-      ctaSecondary: 'C\u00F3mo funciona',
-      appStore: 'App Store',
-      googlePlay: 'Google Play',
-    },
-    social: {
-      users: '50K+',
-      usersLabel: 'miembros activos',
-      matches: '12K+',
-      matchesLabel: 'parejas hechas',
-      rating: '4.8',
-      ratingLabel: 'calificaci\u00F3n promedio',
-    },
-    how: {
-      label: 'C\u00F3mo funciona',
-      title: 'Dos caminos hacia el amor',
-      paths: {
-        match: {
-          heading: 'Encuentra tu pareja',
-          steps: [
-            { num: '01', title: 'Crea tu cuenta', desc: 'Reg\u00EDstrate con tu n\u00FAmero de tel\u00E9fono y crea tu perfil en minutos.' },
-            { num: '02', title: 'Escanea tu palma', desc: 'Opcionalmente escanea tu palma para obtener informaci\u00F3n de compatibilidad m\u00E1s profunda con IA.' },
-            { num: '03', title: 'Explora coincidencias diarias', desc: 'Ve 10 coincidencias seleccionadas cada d\u00EDa. Da like, ama, regala o pasa.' },
-            { num: '04', title: 'Comienza a chatear', desc: 'Los likes mutuos desbloquean el chat privado para conectar de verdad.' },
-          ],
-        },
-        refer: {
-          heading: 'Recomienda a alguien',
-          steps: [
-            { num: '01', title: '\u00BFConoces a alguien ideal?', desc: '\u00BFConoces a alguien que merece amor? Refi\u00E9relo a Agar.' },
-            { num: '02', title: 'Agrega sus datos', desc: 'Solo datos de texto \u2014 no se necesitan fotos. R\u00E1pido y respetuoso.' },
-            { num: '03', title: 'Son descubiertos', desc: 'Tu referido aparece para que otros referidos lo encuentren y conecten.' },
-          ],
-        },
-      },
-    },
-    features: {
-      label: 'Por qu\u00E9 Agar',
-      title: 'No es otra app de deslizar',
       items: [
         {
           icon: 'astrology',
@@ -274,7 +176,7 @@ const content = {
         {
           icon: 'globe',
           title: 'Inteligencia cultural',
-          desc: 'Construido para tradiciones y valores diversos. Disponible en ingl\u00E9s, amh\u00E1rico y espa\u00F1ol.',
+          desc: 'Construido para tradiciones y valores diversos. Disponible en ingl\u00E9s y espa\u00F1ol.',
         },
         {
           icon: 'lock',
@@ -302,7 +204,7 @@ const content = {
     footer: {
       tagline: 'Donde las estrellas se alinean y los corazones se conectan.',
       links: ['Acerca de', 'Privacidad', 'T\u00E9rminos', 'Soporte'],
-      copy: '\u00A9 2026 Agar (\u12A0\u130B\u122D). Todos los derechos reservados.',
+      copy: '\u00A9 2026 Agar. Todos los derechos reservados.',
     },
   },
 };
@@ -508,7 +410,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2.5">
             <Image src="/logo.png" alt="Agar" width={44} height={44} className="logo-blend" />
             <span className="font-display text-xl font-bold tracking-tight text-gold-100">
-              Agar <span className="text-gold-400/60 font-normal text-sm ml-0.5">{'\u12A0\u130B\u122D'}</span>
+              Agar
             </span>
           </div>
 
@@ -783,7 +685,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-2">
                 <Image src="/logo.png" alt="Agar" width={36} height={36} className="logo-blend" />
                 <span className="font-display text-lg font-bold text-gold-100">
-                  Agar <span className="text-gold-400/50 font-normal text-sm">{'\u12A0\u130B\u122D'}</span>
+                  Agar
                 </span>
               </div>
               <p className="text-sm text-gold-200/30">{t.footer.tagline}</p>
