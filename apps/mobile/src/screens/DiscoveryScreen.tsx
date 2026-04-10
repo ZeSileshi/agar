@@ -116,7 +116,11 @@ const MOCK_CANDIDATES: MatchCandidate[] = [
 /*  Component                                                           */
 /* ------------------------------------------------------------------ */
 
-export default function DiscoveryScreen() {
+interface DiscoveryScreenProps {
+  onOpenChat?: (matchId: string, name: string) => void;
+}
+
+export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
   const [candidates, setCandidates] = useState(MOCK_CANDIDATES);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dailyViewed, setDailyViewed] = useState(0);
@@ -361,7 +365,13 @@ export default function DiscoveryScreen() {
             </View>
             <TouchableOpacity
               style={styles.matchChatBtn}
-              onPress={() => setMatchModal(null)}
+              onPress={() => {
+                const match = matchModal;
+                setMatchModal(null);
+                if (match && onOpenChat) {
+                  onOpenChat(match.userId, match.displayName);
+                }
+              }}
               activeOpacity={0.8}
             >
               <Text style={styles.matchChatBtnText}>Send a Message</Text>

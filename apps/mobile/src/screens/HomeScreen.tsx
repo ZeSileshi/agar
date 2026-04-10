@@ -36,7 +36,13 @@ export default function HomeScreen() {
   const renderContent = () => {
     switch (activeTab) {
       case 'discover':
-        return <DiscoveryScreen />;
+        return (
+          <DiscoveryScreen
+            onOpenChat={(matchId, name) => {
+              setChatTarget({ matchId, name });
+            }}
+          />
+        );
       case 'messages':
         return (
           <MessagesScreen
