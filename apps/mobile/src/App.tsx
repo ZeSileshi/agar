@@ -160,7 +160,7 @@ export default function App() {
         );
 
       case 'home':
-        return <HomeScreen />;
+        return <HomeScreen onLogout={handleLogout} />;
     }
   };
 

@@ -58,11 +58,17 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [matchCity, setMatchCity] = useState('');
   const [distanceMiles, setDistanceMiles] = useState(50);
 
+  // Language
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
+
   // Modals
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showLookingForPicker, setShowLookingForPicker] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+
+  const languageLabels: Record<string, string> = { en: 'English', es: 'Español' };
 
   const matchCountry = COUNTRIES.find((c) => c.code === matchCountryCode);
   const matchCities = matchCountryCode ? getCitiesForCountry(matchCountryCode) : [];
@@ -399,6 +405,19 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
           )}
         </View>
 
+        {/* Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <View style={styles.prefList}>
+            <EditablePrefRow
+              label="Language"
+              value={languageLabels[language] ?? language}
+              isEditing={true}
+              onPress={() => setShowLanguagePicker(true)}
+            />
+          </View>
+        </View>
+
         {/* Account */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
@@ -445,6 +464,18 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
         selected={matchCity}
         onSelect={(v) => { setMatchCity(v); setShowCityPicker(false); }}
         onClose={() => setShowCityPicker(false)}
+      />
+      <OptionPicker
+        visible={showLanguagePicker}
+        title="Language"
+        options={['English', 'Español']}
+        selected={languageLabels[language]}
+        onSelect={(v) => {
+          const code = v === 'Español' ? 'es' : 'en';
+          setLanguage(code);
+          setShowLanguagePicker(false);
+        }}
+        onClose={() => setShowLanguagePicker(false)}
       />
     </SafeAreaView>
   );

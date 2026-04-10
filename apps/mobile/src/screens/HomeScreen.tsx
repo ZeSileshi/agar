@@ -18,7 +18,11 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'profile', label: 'Profile', icon: '👤' },
 ];
 
-export default function HomeScreen() {
+interface HomeScreenProps {
+  onLogout?: () => void;
+}
+
+export default function HomeScreen({ onLogout }: HomeScreenProps) {
   const [activeTab, setActiveTab] = useState<Tab>('discover');
   const [chatTarget, setChatTarget] = useState<{ matchId: string; name: string } | null>(null);
 
@@ -58,7 +62,7 @@ export default function HomeScreen() {
       case 'shop':
         return <ShopScreen />;
       case 'profile':
-        return <ProfileScreen />;
+        return <ProfileScreen onLogout={onLogout} />;
     }
   };
 
