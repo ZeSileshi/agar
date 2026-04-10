@@ -329,7 +329,7 @@ function BuyModal({
             onClick={onConfirm}
             className="w-full rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 px-6 py-3 text-sm font-semibold text-navy-950 transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            Pay {pkg.price}
+            Proceed to Payment — {pkg.price}
           </button>
           <button
             onClick={onClose}
@@ -537,27 +537,28 @@ function ShopPage() {
     if (!userId || !buyingPkg) return;
 
     try {
-      // Create payment intent via API
+      // Create Stripe Checkout Session — redirects to Stripe payment page
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${apiUrl}/api/v1/payments/create-payment-intent`, {
+      const origin = window.location.origin;
+      const res = await fetch(`${apiUrl}/api/v1/payments/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packageId: buyingPkg.id }),
+        body: JSON.stringify({
+          packageId: buyingPkg.id,
+          successUrl: `${origin}/shop?success=true&points=${buyingPkg.points}`,
+          cancelUrl: `${origin}/shop?canceled=true`,
+        }),
       });
 
-      if (!res.ok) throw new Error('Payment failed');
+      if (!res.ok) throw new Error('Failed to create checkout session');
 
-      // For now, credit points after successful intent creation
-      // In production, this would be handled by a Stripe webhook
-      await creditPoints(userId, buyingPkg.points, 'purchase', `Purchased ${buyingPkg.points} points for ${buyingPkg.price}`);
-      setToast(`${buyingPkg.points} points added to your account!`);
-    } catch {
-      // Fallback: credit points in test mode
-      await creditPoints(userId, buyingPkg.points, 'purchase', `Purchased ${buyingPkg.points} points`);
-      setToast(`${buyingPkg.points} points added to your account!`);
+      const { url } = await res.json();
+      // Redirect to Stripe's hosted payment page
+      window.location.href = url;
+    } catch (err: any) {
+      setToast('Payment error — please try again');
+      setBuyingPkg(null);
     }
-
-    setBuyingPkg(null);
   }
 
   async function handleSendGift(match: MatchOption) {

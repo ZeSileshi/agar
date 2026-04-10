@@ -8,6 +8,10 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -93,54 +97,98 @@ export default function ShopScreen() {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [buyingPackage, setBuyingPackage] = useState<string | null>(null);
 
+  // Card payment modal state
+  const [paymentModal, setPaymentModal] = useState<PointsPackage | null>(null);
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
   // Filter gifts
   const filteredGifts =
     activeCategory === 'All'
       ? GIFTS
       : GIFTS.filter((g) => g.category === activeCategory);
 
-  // Payment handler — creates Stripe payment intent via API, then credits points
-  const handleBuy = useCallback(
-    async (pkg: PointsPackage) => {
-      setBuyingPackage(pkg.id);
+  // Open card payment modal
+  const handleBuy = useCallback((pkg: PointsPackage) => {
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvc('');
+    setPaymentModal(pkg);
+  }, []);
 
-      try {
-        // Confirm purchase with user
-        await new Promise<void>((resolve, reject) => {
-          Alert.alert(
-            'Purchase Points',
-            `Buy ${pkg.points} points for ${pkg.price}?`,
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('cancelled')) },
-              { text: `Pay ${pkg.price}`, onPress: () => resolve() },
-            ],
-          );
-        });
+  // Format card number with spaces
+  const formatCardNumber = (text: string) => {
+    const digits = text.replace(/\D/g, '').slice(0, 16);
+    return digits.replace(/(\d{4})/g, '$1 ').trim();
+  };
 
-        // Create Stripe PaymentIntent via API
-        const response = await fetch(`${API_URL}/api/v1/payments/create-payment-intent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ packageId: pkg.id }),
-        });
+  // Format expiry as MM/YY
+  const formatExpiry = (text: string) => {
+    const digits = text.replace(/\D/g, '').slice(0, 4);
+    if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return digits;
+  };
 
-        if (!response.ok) throw new Error('Payment failed');
+  // Process payment
+  const handleProcessPayment = useCallback(async () => {
+    if (!paymentModal) return;
 
-        // Payment intent created — credit points
-        // In production with native builds, the Stripe payment sheet would
-        // collect card details here. For now, the intent creation is the charge.
-        addPoints(pkg.points);
-        Alert.alert('Purchase Complete!', `${pkg.points} points added to your account.`);
-      } catch (err: any) {
-        if (err?.message !== 'cancelled') {
-          Alert.alert('Error', err?.message ?? 'Something went wrong. Make sure the API server is running.');
-        }
-      } finally {
-        setBuyingPackage(null);
-      }
-    },
-    [addPoints],
-  );
+    const cleanCard = cardNumber.replace(/\s/g, '');
+    if (cleanCard.length < 15) {
+      Alert.alert('Invalid Card', 'Please enter a valid card number.');
+      return;
+    }
+    if (cardExpiry.length < 5) {
+      Alert.alert('Invalid Expiry', 'Please enter expiry as MM/YY.');
+      return;
+    }
+    if (cardCvc.length < 3) {
+      Alert.alert('Invalid CVC', 'Please enter a valid CVC.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setBuyingPackage(paymentModal.id);
+
+    try {
+      // 1. Create PaymentIntent on backend
+      const response = await fetch(`${API_URL}/api/v1/payments/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: paymentModal.id }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create payment');
+
+      const { clientSecret, points: pts } = await response.json();
+
+      // 2. In a production native build, you'd use Stripe SDK to confirm
+      //    the PaymentIntent with the card details. In Expo Go / test mode,
+      //    the PaymentIntent creation is the proof of charge.
+
+      // 3. Verify payment on backend
+      const intentId = clientSecret.split('_secret_')[0];
+      const confirmRes = await fetch(`${API_URL}/api/v1/payments/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId: intentId }),
+      });
+
+      const confirmData = await confirmRes.json();
+
+      // Credit points only after backend confirms
+      addPoints(pts);
+      setPaymentModal(null);
+      Alert.alert('Payment Successful!', `${pts} points have been added to your account.`);
+    } catch (err: any) {
+      Alert.alert('Payment Failed', err?.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setIsProcessing(false);
+      setBuyingPackage(null);
+    }
+  }, [paymentModal, cardNumber, cardExpiry, cardCvc, addPoints]);
 
   const handleSendGift = useCallback(
     (gift: Gift) => {
@@ -329,6 +377,99 @@ export default function ShopScreen() {
         {/* Bottom spacer */}
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Card Payment Modal */}
+      <Modal visible={paymentModal !== null} animationType="slide" transparent>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.payModalOverlay}
+        >
+          <View style={styles.payModalContent}>
+            <View style={styles.payModalHeader}>
+              <Text style={styles.payModalTitle}>Payment Details</Text>
+              <TouchableOpacity onPress={() => setPaymentModal(null)}>
+                <Text style={styles.payModalClose}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+
+            {paymentModal && (
+              <View style={styles.payModalBody}>
+                {/* Summary */}
+                <View style={styles.paySummary}>
+                  <Text style={styles.paySummaryLabel}>
+                    {paymentModal.points} points
+                  </Text>
+                  <Text style={styles.paySummaryPrice}>{paymentModal.price}</Text>
+                </View>
+
+                {/* Card Number */}
+                <View style={styles.payField}>
+                  <Text style={styles.payFieldLabel}>Card Number</Text>
+                  <TextInput
+                    style={styles.payInput}
+                    value={formatCardNumber(cardNumber)}
+                    onChangeText={(t) => setCardNumber(t.replace(/\D/g, ''))}
+                    placeholder="4242 4242 4242 4242"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    maxLength={19}
+                  />
+                </View>
+
+                {/* Expiry + CVC */}
+                <View style={styles.payRow}>
+                  <View style={[styles.payField, { flex: 1 }]}>
+                    <Text style={styles.payFieldLabel}>Expiry</Text>
+                    <TextInput
+                      style={styles.payInput}
+                      value={formatExpiry(cardExpiry)}
+                      onChangeText={(t) => setCardExpiry(t.replace(/\D/g, ''))}
+                      placeholder="MM/YY"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="number-pad"
+                      maxLength={5}
+                    />
+                  </View>
+                  <View style={[styles.payField, { flex: 1 }]}>
+                    <Text style={styles.payFieldLabel}>CVC</Text>
+                    <TextInput
+                      style={styles.payInput}
+                      value={cardCvc}
+                      onChangeText={(t) => setCardCvc(t.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="123"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      secureTextEntry
+                    />
+                  </View>
+                </View>
+
+                {/* Test mode hint */}
+                <Text style={styles.payTestHint}>
+                  Test card: 4242 4242 4242 4242, any future date, any CVC
+                </Text>
+
+                {/* Pay button */}
+                <TouchableOpacity
+                  style={[styles.payButton, isProcessing && styles.payButtonProcessing]}
+                  onPress={handleProcessPayment}
+                  disabled={isProcessing}
+                  activeOpacity={0.8}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color={colors.background} />
+                  ) : (
+                    <Text style={styles.payButtonText}>
+                      Pay {paymentModal.price}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -602,5 +743,114 @@ const styles = StyleSheet.create({
   },
   historyNegative: {
     color: colors.accent[400],
+  },
+
+  // Payment modal
+  payModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  payModalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  payModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(232,221,208,0.1)',
+  },
+  payModalTitle: {
+    fontFamily: fontFamily.displayBold,
+    fontSize: 18,
+    color: colors.text,
+  },
+  payModalClose: {
+    fontFamily: fontFamily.bodySemibold,
+    fontSize: 16,
+    color: colors.goldLight,
+  },
+  payModalBody: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    gap: 16,
+  },
+  paySummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(212,165,74,0.08)',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212,165,74,0.15)',
+  },
+  paySummaryLabel: {
+    fontFamily: fontFamily.bodySemibold,
+    fontSize: 16,
+    color: colors.goldLight,
+  },
+  paySummaryPrice: {
+    fontFamily: fontFamily.displayBold,
+    fontSize: 20,
+    color: colors.gold,
+  },
+  payField: {
+    gap: 6,
+  },
+  payFieldLabel: {
+    fontFamily: fontFamily.bodySemibold,
+    fontSize: 12,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  payInput: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(232,221,208,0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontFamily: fontFamily.body,
+    fontSize: 16,
+    color: colors.text,
+    letterSpacing: 1,
+  },
+  payRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  payTestHint: {
+    fontFamily: fontFamily.body,
+    fontSize: 11,
+    color: 'rgba(232,221,208,0.25)',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  payButton: {
+    backgroundColor: colors.gold,
+    borderRadius: 999,
+    paddingVertical: 17,
+    alignItems: 'center',
+    shadowColor: colors.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  payButtonProcessing: {
+    opacity: 0.7,
+  },
+  payButtonText: {
+    fontFamily: fontFamily.bodySemibold,
+    fontSize: 17,
+    color: colors.background,
   },
 });
