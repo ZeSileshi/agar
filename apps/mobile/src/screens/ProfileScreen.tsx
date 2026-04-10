@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import Slider from '@react-native-community/slider';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import { useProfileStore } from '../store/profile-store';
@@ -55,6 +56,7 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
   // Match location preference
   const [matchCountryCode, setMatchCountryCode] = useState('');
   const [matchCity, setMatchCity] = useState('');
+  const [distanceMiles, setDistanceMiles] = useState(50);
 
   // Modals
   const [showGenderPicker, setShowGenderPicker] = useState(false);
@@ -354,6 +356,39 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
               }}
             />
           </View>
+
+          {/* Distance slider */}
+          <View style={styles.distanceWrap}>
+            <View style={styles.distanceHeader}>
+              <Text style={styles.distanceLabel}>Distance</Text>
+              <Text style={styles.distanceValue}>
+                {distanceMiles >= 500 ? 'Unlimited' : `${distanceMiles} mi`}
+              </Text>
+            </View>
+            {isEditing ? (
+              <Slider
+                style={styles.slider}
+                minimumValue={5}
+                maximumValue={500}
+                step={5}
+                value={distanceMiles}
+                onValueChange={setDistanceMiles}
+                minimumTrackTintColor={colors.gold}
+                maximumTrackTintColor="rgba(232,221,208,0.12)"
+                thumbTintColor={colors.gold}
+              />
+            ) : (
+              <View style={styles.distanceBarBg}>
+                <View style={[styles.distanceBarFill, { width: `${Math.min((distanceMiles / 500) * 100, 100)}%` }]} />
+              </View>
+            )}
+            <View style={styles.distanceTicks}>
+              <Text style={styles.distanceTick}>5 mi</Text>
+              <Text style={styles.distanceTick}>250 mi</Text>
+              <Text style={styles.distanceTick}>500+</Text>
+            </View>
+          </View>
+
           {isEditing && matchCountryCode && (
             <TouchableOpacity
               style={styles.clearLocationBtn}
@@ -669,6 +704,39 @@ const styles = StyleSheet.create({
     fontSize: 14, color: colors.gold, textAlign: 'center',
   },
   ageDash: { fontFamily: fontFamily.body, fontSize: 14, color: colors.textMuted },
+  distanceWrap: {
+    marginTop: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(232,221,208,0.06)',
+  },
+  distanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  distanceLabel: { fontFamily: fontFamily.body, fontSize: 14, color: colors.textMuted },
+  distanceValue: { fontFamily: fontFamily.bodySemibold, fontSize: 16, color: colors.gold },
+  slider: { width: '100%', height: 40 },
+  distanceBarBg: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(232,221,208,0.12)',
+    marginVertical: 16,
+  },
+  distanceBarFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: colors.gold,
+  },
+  distanceTicks: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  distanceTick: { fontFamily: fontFamily.body, fontSize: 11, color: colors.textMuted },
   clearLocationBtn: { alignItems: 'center', marginTop: 10 },
   clearLocationText: { fontFamily: fontFamily.body, fontSize: 13, color: colors.textMuted, textDecorationLine: 'underline' },
 
