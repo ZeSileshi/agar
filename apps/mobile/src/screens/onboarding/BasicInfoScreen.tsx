@@ -9,9 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
+import { fontFamily } from '../../theme/typography';
+import { COUNTRIES, getCitiesForCountry } from '../../data/locations';
 
 type Gender = 'male' | 'female' | 'nonbinary';
 type LookingFor = 'men' | 'women' | 'everyone';
@@ -22,6 +25,7 @@ interface BasicInfoScreenProps {
     dateOfBirth: Date;
     gender: Gender;
     lookingFor: LookingFor;
+    country: string;
     city: string;
   }) => void;
   onBack: () => void;
@@ -44,42 +48,92 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+/** Returns the number of days in a given month/year */
+function daysInMonth(month: number, year: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+/** Validates date and returns error message or null */
+function validateDate(day: string, monthName: string, year: string): string | null {
+  if (!day || !monthName || year.length < 4) return null; // not complete yet
+
+  const d = parseInt(day, 10);
+  const y = parseInt(year, 10);
+  const m = MONTHS.indexOf(monthName);
+
+  if (m === -1) return 'Invalid month';
+  if (y < 1920 || y > new Date().getFullYear()) return 'Invalid year';
+  if (d < 1 || d > daysInMonth(m, y)) return `${monthName} ${y} only has ${daysInMonth(m, y)} days`;
+
+  const dob = new Date(y, m, d);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+
+  if (age < 18) return 'You must be at least 18 years old';
+  if (age > 120) return 'Please enter a valid birth year';
+
+  return null;
+}
+
 export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenProps) {
   const [firstName, setFirstName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
   const [lookingFor, setLookingFor] = useState<LookingFor | null>(null);
-  const [city, setCity] = useState('');
 
-  // Date of birth state
+  // Date of birth
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  // Location
+  const [countryCode, setCountryCode] = useState('');
+  const [city, setCity] = useState('');
+
+  // Modal state
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+
+  const selectedCountry = COUNTRIES.find((c) => c.code === countryCode);
+  const cities = countryCode ? getCitiesForCountry(countryCode) : [];
+
+  // Re-validate date on change
+  const updateDate = (day: string, month: string, year: string) => {
+    const err = validateDate(day, month, year);
+    setDateError(err);
+  };
 
   const isFormValid =
     firstName.trim().length >= 2 &&
     birthDay !== '' &&
     birthMonth !== '' &&
     birthYear.length === 4 &&
+    !dateError &&
     gender !== null &&
     lookingFor !== null &&
-    city.trim().length >= 2;
+    countryCode !== '' &&
+    city !== '';
 
   const handleContinue = () => {
     if (!isFormValid || !gender || !lookingFor) return;
 
     const monthIndex = MONTHS.indexOf(birthMonth);
-    const dob = new Date(
-      parseInt(birthYear, 10),
-      monthIndex,
-      parseInt(birthDay, 10)
-    );
+    const dob = new Date(parseInt(birthYear, 10), monthIndex, parseInt(birthDay, 10));
 
-    // Basic age validation (18+)
+    // Final age check
     const today = new Date();
-    const age = today.getFullYear() - dob.getFullYear();
+    let age = today.getFullYear() - dob.getFullYear();
+    const md = today.getMonth() - dob.getMonth();
+    if (md < 0 || (md === 0 && today.getDate() < dob.getDate())) age--;
+
     if (age < 18) {
-      return; // Silently reject, could add alert
+      Alert.alert('Age Requirement', 'You must be at least 18 years old to use Agar.');
+      return;
     }
 
     onContinue({
@@ -87,7 +141,8 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
       dateOfBirth: dob,
       gender,
       lookingFor,
-      city: city.trim(),
+      country: countryCode,
+      city,
     });
   };
 
@@ -107,7 +162,7 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
             <Text style={styles.backBtnText}>{'<'} Back</Text>
           </TouchableOpacity>
 
-          {/* Progress indicator */}
+          {/* Progress */}
           <View style={styles.progressRow}>
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={styles.progressDot} />
@@ -138,11 +193,13 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
             <Text style={styles.label}>Date of Birth</Text>
             <View style={styles.dateRow}>
               <TextInput
-                style={[styles.textInput, styles.dateInputDay]}
+                style={[styles.textInput, styles.dateInputDay, dateError && styles.inputError]}
                 value={birthDay}
-                onChangeText={(text) =>
-                  setBirthDay(text.replace(/\D/g, '').slice(0, 2))
-                }
+                onChangeText={(text) => {
+                  const val = text.replace(/\D/g, '').slice(0, 2);
+                  setBirthDay(val);
+                  updateDate(val, birthMonth, birthYear);
+                }}
                 placeholder="DD"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="number-pad"
@@ -150,32 +207,29 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
               />
 
               <TouchableOpacity
-                style={[styles.textInput, styles.dateInputMonth]}
+                style={[styles.textInput, styles.dateInputMonth, dateError && styles.inputError]}
                 onPress={() => setShowMonthPicker(true)}
               >
-                <Text
-                  style={
-                    birthMonth
-                      ? styles.dateMonthText
-                      : styles.dateMonthPlaceholder
-                  }
-                >
+                <Text style={birthMonth ? styles.dateMonthText : styles.dateMonthPlaceholder}>
                   {birthMonth || 'Month'}
                 </Text>
               </TouchableOpacity>
 
               <TextInput
-                style={[styles.textInput, styles.dateInputYear]}
+                style={[styles.textInput, styles.dateInputYear, dateError && styles.inputError]}
                 value={birthYear}
-                onChangeText={(text) =>
-                  setBirthYear(text.replace(/\D/g, '').slice(0, 4))
-                }
+                onChangeText={(text) => {
+                  const val = text.replace(/\D/g, '').slice(0, 4);
+                  setBirthYear(val);
+                  updateDate(birthDay, birthMonth, val);
+                }}
                 placeholder="YYYY"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={4}
               />
             </View>
+            {dateError && <Text style={styles.errorText}>{dateError}</Text>}
           </View>
 
           {/* Gender */}
@@ -185,19 +239,11 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
               {GENDER_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
-                  style={[
-                    styles.chip,
-                    gender === opt.value && styles.chipSelected,
-                  ]}
+                  style={[styles.chip, gender === opt.value && styles.chipSelected]}
                   onPress={() => setGender(opt.value)}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      gender === opt.value && styles.chipTextSelected,
-                    ]}
-                  >
+                  <Text style={[styles.chipText, gender === opt.value && styles.chipTextSelected]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -212,19 +258,11 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
               {LOOKING_FOR_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
-                  style={[
-                    styles.chip,
-                    lookingFor === opt.value && styles.chipSelected,
-                  ]}
+                  style={[styles.chip, lookingFor === opt.value && styles.chipSelected]}
                   onPress={() => setLookingFor(opt.value)}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      lookingFor === opt.value && styles.chipTextSelected,
-                    ]}
-                  >
+                  <Text style={[styles.chipText, lookingFor === opt.value && styles.chipTextSelected]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -232,26 +270,41 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
             </View>
           </View>
 
+          {/* Country */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Country</Text>
+            <TouchableOpacity
+              style={styles.textInput}
+              onPress={() => setShowCountryPicker(true)}
+            >
+              <Text style={selectedCountry ? styles.dropdownText : styles.dropdownPlaceholder}>
+                {selectedCountry ? `${selectedCountry.flag}  ${selectedCountry.name}` : 'Select country'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* City */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>City</Text>
-            <TextInput
-              style={styles.textInput}
-              value={city}
-              onChangeText={setCity}
-              placeholder="e.g. Addis Ababa"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="words"
-              maxLength={50}
-            />
+            <TouchableOpacity
+              style={[styles.textInput, !countryCode && styles.inputDisabled]}
+              onPress={() => {
+                if (!countryCode) {
+                  Alert.alert('Select Country', 'Please select your country first.');
+                  return;
+                }
+                setShowCityPicker(true);
+              }}
+            >
+              <Text style={city ? styles.dropdownText : styles.dropdownPlaceholder}>
+                {city || (countryCode ? 'Select city' : 'Select country first')}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Continue */}
           <TouchableOpacity
-            style={[
-              styles.continueBtn,
-              !isFormValid && styles.continueBtnDisabled,
-            ]}
+            style={[styles.continueBtn, !isFormValid && styles.continueBtnDisabled]}
             onPress={handleContinue}
             disabled={!isFormValid}
             activeOpacity={0.8}
@@ -262,54 +315,126 @@ export default function BasicInfoScreen({ onContinue, onBack }: BasicInfoScreenP
       </KeyboardAvoidingView>
 
       {/* Month Picker Modal */}
-      <Modal visible={showMonthPicker} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Month</Text>
-              <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
-                <Text style={styles.modalClose}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              {MONTHS.map((month) => (
-                <TouchableOpacity
-                  key={month}
-                  style={[
-                    styles.monthRow,
-                    birthMonth === month && styles.monthRowSelected,
-                  ]}
-                  onPress={() => {
-                    setBirthMonth(month);
-                    setShowMonthPicker(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.monthRowText,
-                      birthMonth === month && styles.monthRowTextSelected,
-                    ]}
-                  >
-                    {month}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <PickerModal
+        visible={showMonthPicker}
+        title="Select Month"
+        items={MONTHS.map((m) => ({ key: m, label: m }))}
+        selected={birthMonth}
+        onSelect={(val) => {
+          setBirthMonth(val);
+          updateDate(birthDay, val, birthYear);
+          setShowMonthPicker(false);
+        }}
+        onClose={() => setShowMonthPicker(false)}
+      />
+
+      {/* Country Picker Modal */}
+      <PickerModal
+        visible={showCountryPicker}
+        title="Select Country"
+        items={COUNTRIES.map((c) => ({ key: c.code, label: `${c.flag}  ${c.name}` }))}
+        selected={countryCode}
+        onSelect={(val) => {
+          setCountryCode(val);
+          setCity(''); // reset city when country changes
+          setShowCountryPicker(false);
+        }}
+        onClose={() => setShowCountryPicker(false)}
+      />
+
+      {/* City Picker Modal */}
+      <PickerModal
+        visible={showCityPicker}
+        title="Select City"
+        items={cities.map((c) => ({ key: c, label: c }))}
+        selected={city}
+        onSelect={(val) => {
+          setCity(val);
+          setShowCityPicker(false);
+        }}
+        onClose={() => setShowCityPicker(false)}
+      />
     </SafeAreaView>
   );
 }
+
+/* ---------- Reusable picker modal ---------- */
+
+function PickerModal({
+  visible,
+  title,
+  items,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  items: { key: string; label: string }[];
+  selected: string;
+  onSelect: (key: string) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = search
+    ? items.filter((i) => i.label.toLowerCase().includes(search.toLowerCase()))
+    : items;
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.modalClose}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          {items.length > 8 && (
+            <View style={styles.searchWrap}>
+              <TextInput
+                style={styles.searchInput}
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search..."
+                placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
+              />
+            </View>
+          )}
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {filtered.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.pickerRow, selected === item.key && styles.pickerRowSelected]}
+                onPress={() => {
+                  onSelect(item.key);
+                  setSearch('');
+                }}
+              >
+                <Text style={[styles.pickerRowText, selected === item.key && styles.pickerRowTextSelected]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            {filtered.length === 0 && (
+              <Text style={styles.noResults}>No results found</Text>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/* ---------- Styles ---------- */
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  flex: {
-    flex: 1,
-  },
+  flex: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
@@ -321,9 +446,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backBtnText: {
+    fontFamily: fontFamily.bodyMedium,
     fontSize: 16,
     color: colors.goldLight,
-    fontWeight: '500',
   },
   progressRow: {
     flexDirection: 'row',
@@ -340,12 +465,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
   },
   heading: {
+    fontFamily: fontFamily.displayBold,
     fontSize: 28,
-    fontWeight: '700',
     color: colors.goldLight,
     marginBottom: 8,
   },
   subheading: {
+    fontFamily: fontFamily.body,
     fontSize: 15,
     color: colors.textMuted,
     marginBottom: 32,
@@ -355,8 +481,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fontFamily.bodySemibold,
+    fontSize: 13,
     color: colors.text,
     marginBottom: 10,
     textTransform: 'uppercase',
@@ -370,7 +496,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: Platform.OS === 'ios' ? 16 : 12,
     fontSize: 16,
+    fontFamily: fontFamily.body,
     color: colors.text,
+  },
+  inputError: {
+    borderColor: 'rgba(244,63,94,0.6)',
+  },
+  inputDisabled: {
+    opacity: 0.5,
+  },
+  errorText: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    color: '#f43f5e',
+    marginTop: 6,
   },
   dateRow: {
     flexDirection: 'row',
@@ -389,10 +528,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dateMonthText: {
+    fontFamily: fontFamily.body,
     fontSize: 16,
     color: colors.text,
   },
   dateMonthPlaceholder: {
+    fontFamily: fontFamily.body,
+    fontSize: 16,
+    color: colors.textMuted,
+  },
+  dropdownText: {
+    fontFamily: fontFamily.body,
+    fontSize: 16,
+    color: colors.text,
+  },
+  dropdownPlaceholder: {
+    fontFamily: fontFamily.body,
     fontSize: 16,
     color: colors.textMuted,
   },
@@ -414,8 +565,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(212,165,74,0.1)',
   },
   chipText: {
+    fontFamily: fontFamily.bodySemibold,
     fontSize: 15,
-    fontWeight: '600',
     color: colors.textMuted,
   },
   chipTextSelected: {
@@ -423,7 +574,7 @@ const styles = StyleSheet.create({
   },
   continueBtn: {
     backgroundColor: colors.gold,
-    borderRadius: 14,
+    borderRadius: 999,
     paddingVertical: 17,
     alignItems: 'center',
     marginTop: 12,
@@ -439,10 +590,11 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   continueBtnText: {
+    fontFamily: fontFamily.bodySemibold,
     fontSize: 17,
-    fontWeight: '700',
     color: colors.background,
   },
+
   // Modal
   modalOverlay: {
     flex: 1,
@@ -453,7 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '50%',
+    maxHeight: '60%',
     paddingBottom: 40,
   },
   modalHeader: {
@@ -466,28 +618,51 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(232,221,208,0.1)',
   },
   modalTitle: {
+    fontFamily: fontFamily.displayBold,
     fontSize: 18,
-    fontWeight: '700',
     color: colors.text,
   },
   modalClose: {
+    fontFamily: fontFamily.bodySemibold,
     fontSize: 16,
-    fontWeight: '600',
     color: colors.goldLight,
   },
-  monthRow: {
+  searchWrap: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(232,221,208,0.06)',
+  },
+  searchInput: {
+    backgroundColor: 'rgba(232,221,208,0.06)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontFamily: fontFamily.body,
+    fontSize: 15,
+    color: colors.text,
+  },
+  pickerRow: {
     paddingHorizontal: 24,
     paddingVertical: 14,
   },
-  monthRowSelected: {
+  pickerRowSelected: {
     backgroundColor: 'rgba(212,165,74,0.1)',
   },
-  monthRowText: {
+  pickerRowText: {
+    fontFamily: fontFamily.body,
     fontSize: 16,
     color: colors.text,
   },
-  monthRowTextSelected: {
+  pickerRowTextSelected: {
+    fontFamily: fontFamily.bodySemibold,
     color: colors.goldLight,
-    fontWeight: '600',
+  },
+  noResults: {
+    fontFamily: fontFamily.body,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });

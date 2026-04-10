@@ -68,16 +68,30 @@ export default function PhotoUploadScreen({
       return;
     }
 
+    // Calculate how many empty slots remain from this index onward
+    const emptySlots = photos.slice(index).filter((p) => p === null).length;
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsMultipleSelection: emptySlots > 1,
+      selectionLimit: emptySlots,
+      allowsEditing: emptySlots <= 1,
       aspect: [3, 4],
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets[0]) {
+    if (!result.canceled && result.assets.length > 0) {
       const newPhotos = [...photos];
-      newPhotos[index] = result.assets[0].uri;
+      let slotIndex = index;
+      for (const asset of result.assets) {
+        // Find next empty slot from slotIndex
+        while (slotIndex < TOTAL_SLOTS && newPhotos[slotIndex] !== null) {
+          slotIndex++;
+        }
+        if (slotIndex >= TOTAL_SLOTS) break;
+        newPhotos[slotIndex] = asset.uri;
+        slotIndex++;
+      }
       setPhotos(newPhotos);
     }
   };

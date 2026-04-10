@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StatusBar, View, StyleSheet, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
@@ -13,6 +13,7 @@ import {
 } from '@expo-google-fonts/urbanist';
 import { initI18n } from '@agar/i18n';
 import { colors } from './theme/colors';
+import { useAuthStore } from './store/auth-store';
 
 // Screens
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -27,7 +28,7 @@ import DiscoveryScreen from './screens/DiscoveryScreen';
 // Initialize i18n
 initI18n('en');
 
-// Keep splash visible while loading fonts
+// Keep splash visible while loading fonts + session
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Screen =
@@ -44,6 +45,9 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
   const [appReady, setAppReady] = useState(false);
 
+  const { isAuthenticated, onboardingComplete, isHydrated, hydrate, completeOnboarding } =
+    useAuthStore();
+
   const [fontsLoaded, fontError] = useFonts({
     Urbanist_400Regular,
     Urbanist_500Medium,
@@ -53,13 +57,22 @@ export default function App() {
     NotoSansEthiopic: require('./assets/fonts/NotoSansEthiopic.ttf'),
   });
 
-  // Proceed when fonts are loaded OR if they error (use system fonts as fallback)
+  // Hydrate session from secure storage on mount
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    hydrate();
+  }, [hydrate]);
+
+  // Once fonts + session are ready, decide initial screen
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && isHydrated) {
+      // Returning user with completed onboarding → straight to discovery
+      if (isAuthenticated && onboardingComplete) {
+        setScreen('discovery');
+      }
       setAppReady(true);
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, isHydrated, isAuthenticated, onboardingComplete]);
 
   if (!appReady) {
     return null; // Splash screen is still visible
@@ -103,7 +116,10 @@ export default function App() {
       case 'palmScan':
         return (
           <PalmScanScreen
-            onContinue={(_reading) => setScreen('discovery')}
+            onContinue={(_reading) => {
+              completeOnboarding();
+              setScreen('discovery');
+            }}
             onBack={() => setScreen('photoUpload')}
           />
         );
