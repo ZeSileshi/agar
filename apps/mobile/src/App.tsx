@@ -5,20 +5,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_600SemiBold,
-  DMSans_700Bold,
-} from '@expo-google-fonts/dm-sans';
-import {
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-  Outfit_800ExtraBold,
-} from '@expo-google-fonts/outfit';
-import {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+  Urbanist_400Regular,
+  Urbanist_500Medium,
+  Urbanist_600SemiBold,
+  Urbanist_700Bold,
+  Urbanist_800ExtraBold,
+} from '@expo-google-fonts/urbanist';
 import { initI18n } from '@agar/i18n';
 import { colors } from './theme/colors';
 
@@ -53,15 +45,11 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_600SemiBold,
-    DMSans_700Bold,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
-    Outfit_800ExtraBold,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_700Bold,
+    Urbanist_400Regular,
+    Urbanist_500Medium,
+    Urbanist_600SemiBold,
+    Urbanist_700Bold,
+    Urbanist_800ExtraBold,
     NotoSansEthiopic: require('./assets/fonts/NotoSansEthiopic.ttf'),
   });
 

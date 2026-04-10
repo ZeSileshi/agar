@@ -33,8 +33,8 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
           {/* Headline — matches web exactly */}
           <Text style={styles.headline}>
-            Find someone who truly{'\n'}
-            <Text style={styles.headlineAccent}>gets you.</Text>
+            Let the cosmos find{'\n'}
+            <Text style={styles.headlineAccent}>your person.</Text>
           </Text>
 
           {/* Subtitle */}

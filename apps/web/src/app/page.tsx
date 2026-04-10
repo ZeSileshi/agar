@@ -20,8 +20,8 @@ const content = {
     nav: { signin: 'Sign In', register: 'Register' },
     hero: {
       badge: 'Astrology meets AI',
-      title: 'Find someone who truly',
-      titleAccent: 'gets you.',
+      title: 'Let the cosmos find',
+      titleAccent: 'your person.',
       subtitle: 'Agar combines three astrology systems, personality science, and cultural intelligence to find matches that actually make sense.',
       cta: 'Start matching — it\u2019s free',
       ctaSecondary: 'How it works',
@@ -116,8 +116,8 @@ const content = {
     nav: { signin: '\u1260\u12ED\u1295', register: '\u12ED\u1218\u12DD\u1308\u1261' },
     hero: {
       badge: '\u12AE\u12A8\u1265 \u1246\u1320\u122B \u12A8AI \u130B\u122D',
-      title: '\u1260\u12A5\u1235\u12A9 \u12E8\u121A\u1308\u1263\u12CE\u1275\u1295',
-      titleAccent: '\u12EB\u130D\u1299\u1362',
+      title: 'ኮስሞስ ያግዝዎት',
+      titleAccent: 'ሰውዎን ያግኙ።',
       subtitle: '\u12A0\u130B\u122D \u1230\u120D\u1235\u1270 \u12E8\u12AE\u12A8\u1265 \u1246\u1320\u122B \u1235\u122D\u12D3\u1276\u127D\u1295\u1363 \u12E8\u1235\u1265\u12D5\u1293 \u1233\u12ED\u1295\u1235 \u12A5\u1293 \u1263\u1205\u120B\u12CA \u1265\u120D\u1205\u1290\u1275\u1295 \u1260\u121B\u1348\u1293\u1308\u122D \u1275\u12AD\u12AD\u1208\u129B \u130D\u1325\u121A\u12EB\u12CE\u127D\u1295 \u12EB\u130D\u1293\u120D\u1362',
       cta: '\u130D\u1325\u121A\u12EB \u1305\u121D\u122D \u2014 \u1260\u1290\u133D\u1290\u1275',
       ctaSecondary: '\u12A5\u1295\u12F0\u1275 \u12A5\u1295\u12F0\u121A\u1230\u122B',
@@ -212,8 +212,8 @@ const content = {
     nav: { signin: 'Iniciar', register: 'Registrarse' },
     hero: {
       badge: 'Astrolog\u00EDa + IA',
-      title: 'Encuentra a alguien que',
-      titleAccent: 'te entienda.',
+      title: 'Deja que el cosmos encuentre',
+      titleAccent: 'a tu persona.',
       subtitle: 'Agar combina tres sistemas astrol\u00F3gicos, ciencia de la personalidad e inteligencia cultural para encontrar coincidencias que realmente tienen sentido.',
       cta: 'Comienza gratis',
       ctaSecondary: 'C\u00F3mo funciona',

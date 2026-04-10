@@ -23,10 +23,8 @@
   --color-surface: #103456;
   --color-background: #0C2948;
 
-  /* Typography */
-  --font-sans: var(--font-body), var(--font-ethiopic), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-display), var(--font-ethiopic), system-ui, sans-serif;
-  --font-accent: var(--font-accent), var(--font-ethiopic), monospace;
+  /* Typography — Urbanist everywhere, Ethiopic fallback */
+  --font-sans: var(--font-urbanist), var(--font-ethiopic), system-ui, -apple-system, sans-serif;
 
   /* Spacing */
   --radius-card: 1.25rem;
@@ -37,7 +35,7 @@
 
 /* Base styles */
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-urbanist), var(--font-ethiopic), system-ui, -apple-system, sans-serif;
   background: var(--color-background);
   color: #e8ddd0;
   -webkit-font-smoothing: antialiased;
@@ -47,16 +45,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Display headings - Outfit */
+/* Display headings — Urbanist bold/extrabold */
 .font-display {
-  font-family: var(--font-display);
+  font-family: var(--font-urbanist), var(--font-ethiopic), system-ui, sans-serif;
   letter-spacing: -0.035em;
-  font-feature-settings: 'ss01', 'ss02';
 }
 
-/* Accent text - Space Grotesk */
+/* Accent text — Urbanist medium */
 .font-accent {
-  font-family: var(--font-accent);
+  font-family: var(--font-urbanist), var(--font-ethiopic), system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
 

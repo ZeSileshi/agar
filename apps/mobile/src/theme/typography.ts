@@ -1,22 +1,22 @@
 /**
  * Typography system for Agar mobile app.
  *
- * Uses Outfit (display/headings) + DM Sans (body) + Space Grotesk (numbers/stats)
+ * Uses Urbanist across the board for a compact, sleek look
  * + Noto Sans Ethiopic (Amharic support).
  *
  * Fonts must be loaded via expo-font before use.
  */
 
 export const fontFamily = {
-  body: 'DMSans_400Regular',
-  bodyMedium: 'DMSans_500Medium',
-  bodySemibold: 'DMSans_600SemiBold',
-  bodyBold: 'DMSans_700Bold',
-  display: 'Outfit_600SemiBold',
-  displayBold: 'Outfit_700Bold',
-  displayExtrabold: 'Outfit_800ExtraBold',
-  accent: 'SpaceGrotesk_500Medium',
-  accentBold: 'SpaceGrotesk_700Bold',
+  body: 'Urbanist_400Regular',
+  bodyMedium: 'Urbanist_500Medium',
+  bodySemibold: 'Urbanist_600SemiBold',
+  bodyBold: 'Urbanist_700Bold',
+  display: 'Urbanist_600SemiBold',
+  displayBold: 'Urbanist_700Bold',
+  displayExtrabold: 'Urbanist_800ExtraBold',
+  accent: 'Urbanist_500Medium',
+  accentBold: 'Urbanist_700Bold',
   ethiopic: 'NotoSansEthiopic',
 } as const;
 
