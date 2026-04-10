@@ -495,7 +495,7 @@ export default function LandingPage() {
                 <span className="text-xs text-gold-200/25">or</span>
                 <div className="flex items-center gap-2 rounded-full border border-gold-400/15 bg-gold-400/[0.04] px-4 py-2.5">
                   <span className="text-sm">♥</span>
-                  <span className="text-xs font-semibold text-gold-200/60">Refer someone you know</span>
+                  <span className="text-xs font-semibold text-gold-200/60">Login to refer someone you know</span>
                 </div>
               </div>
 

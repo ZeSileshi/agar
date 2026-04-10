@@ -69,7 +69,7 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
               </View>
               <View style={styles.dualPathCard}>
                 <Text style={styles.dualPathIcon}>♥</Text>
-                <Text style={styles.dualPathLabel}>Refer someone you know</Text>
+                <Text style={styles.dualPathLabel}>Login to refer someone you know</Text>
               </View>
             </View>
           </View>
