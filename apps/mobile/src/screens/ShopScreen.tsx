@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useStripe } from '@stripe/stripe-react-native';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import { usePointsStore } from '../store/points-store';
@@ -94,69 +93,91 @@ export default function ShopScreen() {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [buyingPackage, setBuyingPackage] = useState<string | null>(null);
 
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
-
   // Filter gifts
   const filteredGifts =
     activeCategory === 'All'
       ? GIFTS
       : GIFTS.filter((g) => g.category === activeCategory);
 
-  // Stripe payment handler
+  // Payment handler — tries Stripe (native build), falls back to test mode (Expo Go)
   const handleBuy = useCallback(
     async (pkg: PointsPackage) => {
       setBuyingPackage(pkg.id);
 
       try {
-        // 1. Create PaymentIntent on backend
-        const response = await fetch(`${API_URL}/api/v1/payments/create-payment-intent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ packageId: pkg.id }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create payment');
-        }
-
-        const { clientSecret } = await response.json();
-
-        // 2. Initialize Stripe payment sheet
-        const { error: initError } = await initPaymentSheet({
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'Agar - አጋር',
-          style: 'alwaysDark',
-        });
-
-        if (initError) {
-          Alert.alert('Error', initError.message);
-          setBuyingPackage(null);
-          return;
-        }
-
-        // 3. Present payment sheet to user
-        const { error: payError } = await presentPaymentSheet();
-
-        if (payError) {
-          if (payError.code !== 'Canceled') {
-            Alert.alert('Payment Failed', payError.message);
+        // Try loading Stripe native module (only available in dev/prod builds)
+        let useStripePayment = false;
+        try {
+          const stripe = require('@stripe/stripe-react-native');
+          if (stripe?.useStripe) {
+            useStripePayment = true;
           }
-          // User cancelled — no error alert
-        } else {
-          // Payment successful
+        } catch {
+          // Native module not available (Expo Go) — use test mode
+        }
+
+        if (useStripePayment) {
+          // Real Stripe flow for native builds
+          const response = await fetch(`${API_URL}/api/v1/payments/create-payment-intent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ packageId: pkg.id }),
+          });
+
+          if (!response.ok) throw new Error('Failed to create payment');
+
+          const { clientSecret } = await response.json();
+          const { initPaymentSheet, presentPaymentSheet } = require('@stripe/stripe-react-native').useStripe();
+
+          const { error: initError } = await initPaymentSheet({
+            paymentIntentClientSecret: clientSecret,
+            merchantDisplayName: 'Agar - አጋር',
+            style: 'alwaysDark',
+          });
+
+          if (initError) {
+            Alert.alert('Error', initError.message);
+            return;
+          }
+
+          const { error: payError } = await presentPaymentSheet();
+
+          if (payError) {
+            if (payError.code !== 'Canceled') {
+              Alert.alert('Payment Failed', payError.message);
+            }
+            return;
+          }
+
           addPoints(pkg.points);
-          Alert.alert(
-            'Purchase Complete!',
-            `${pkg.points} points have been added to your account.`,
-          );
+          Alert.alert('Purchase Complete!', `${pkg.points} points added to your account.`);
+        } else {
+          // Test mode — confirm purchase dialog (Expo Go / development)
+          await new Promise<void>((resolve, reject) => {
+            Alert.alert(
+              'Purchase Points',
+              `Buy ${pkg.points} points for ${pkg.price}?\n\n(Test mode — no real charge)`,
+              [
+                { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('cancelled')) },
+                { text: `Pay ${pkg.price}`, onPress: () => resolve() },
+              ],
+            );
+          });
+
+          // Simulate processing
+          await new Promise((r) => setTimeout(r, 800));
+          addPoints(pkg.points);
+          Alert.alert('Purchase Complete!', `${pkg.points} points added to your account.`);
         }
       } catch (err: any) {
-        Alert.alert('Error', err.message ?? 'Something went wrong');
+        if (err?.message !== 'cancelled') {
+          Alert.alert('Error', err?.message ?? 'Something went wrong');
+        }
       } finally {
         setBuyingPackage(null);
       }
     },
-    [initPaymentSheet, presentPaymentSheet],
+    [addPoints],
   );
 
   const handleSendGift = useCallback(

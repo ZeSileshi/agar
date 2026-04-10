@@ -11,12 +11,9 @@ import {
   Urbanist_700Bold,
   Urbanist_800ExtraBold,
 } from '@expo-google-fonts/urbanist';
-import { StripeProvider } from '@stripe/stripe-react-native';
 import { initI18n } from '@agar/i18n';
 import { colors } from './theme/colors';
 import { useAuthStore } from './store/auth-store';
-
-const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
 
 // Screens
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -161,13 +158,11 @@ export default function App() {
   };
 
   return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-          {renderScreen()}
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </StripeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        {renderScreen()}
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
