@@ -15,6 +15,8 @@ const envSchema = z.object({
   MAX_FILE_SIZE: z.coerce.number().default(5 * 1024 * 1024), // 5MB
   GOOGLE_CLIENT_ID: z.string().optional(),
   APPLE_CLIENT_ID: z.string().optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

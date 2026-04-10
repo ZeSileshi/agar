@@ -15,6 +15,7 @@ import { chatRouter } from './routes/chat.js';
 import { referralRouter } from './routes/referrals.js';
 import { compatibilityRouter } from './routes/compatibility.js';
 import { referralProfileRouter } from './routes/referral-profiles.js';
+import { paymentRouter } from './routes/payments.js';
 import { initWebSocket } from './websocket/index.js';
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/v1/chat', chatRouter);
 app.use('/api/v1/referrals', referralRouter);
 app.use('/api/v1/compatibility', compatibilityRouter);
 app.use('/api/v1/referral-profiles', referralProfileRouter);
+app.use('/api/v1/payments', paymentRouter);
 
 // Error handling
 app.use(errorHandler);

@@ -7,10 +7,14 @@ import {
   StyleSheet,
   Alert,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStripe } from '@stripe/stripe-react-native';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,6 +30,7 @@ interface Gift {
 }
 
 interface PointsPackage {
+  id: string;
   points: number;
   price: string;
   badge?: string;
@@ -43,9 +48,9 @@ interface Transaction {
 // ---------------------------------------------------------------------------
 
 const PACKAGES: PointsPackage[] = [
-  { points: 20, price: '$5.00' },
-  { points: 50, price: '$10.00', badge: 'Popular' },
-  { points: 120, price: '$20.00', badge: 'Best Value' },
+  { id: 'small', points: 20, price: '$5.00' },
+  { id: 'medium', points: 50, price: '$10.00', badge: 'Popular' },
+  { id: 'large', points: 120, price: '$20.00', badge: 'Best Value' },
 ];
 
 const GIFTS: Gift[] = [
@@ -86,6 +91,9 @@ export default function ShopScreen() {
   const [points, setPoints] = useState(45);
   const [activeCategory, setActiveCategory] = useState<GiftCategory>('All');
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [buyingPackage, setBuyingPackage] = useState<string | null>(null);
+
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   // Filter gifts
   const filteredGifts =
@@ -93,17 +101,61 @@ export default function ShopScreen() {
       ? GIFTS
       : GIFTS.filter((g) => g.category === activeCategory);
 
-  // Handlers
+  // Stripe payment handler
   const handleBuy = useCallback(
-    (pkg: PointsPackage) => {
-      Alert.alert(
-        'Coming Soon',
-        `Free points claimed! +${pkg.points} points added.`,
-        [{ text: 'OK' }],
-      );
-      setPoints((prev) => prev + pkg.points);
+    async (pkg: PointsPackage) => {
+      setBuyingPackage(pkg.id);
+
+      try {
+        // 1. Create PaymentIntent on backend
+        const response = await fetch(`${API_URL}/api/v1/payments/create-payment-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packageId: pkg.id }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create payment');
+        }
+
+        const { clientSecret } = await response.json();
+
+        // 2. Initialize Stripe payment sheet
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'Agar - አጋር',
+          style: 'alwaysDark',
+        });
+
+        if (initError) {
+          Alert.alert('Error', initError.message);
+          setBuyingPackage(null);
+          return;
+        }
+
+        // 3. Present payment sheet to user
+        const { error: payError } = await presentPaymentSheet();
+
+        if (payError) {
+          if (payError.code !== 'Canceled') {
+            Alert.alert('Payment Failed', payError.message);
+          }
+          // User cancelled — no error alert
+        } else {
+          // Payment successful
+          setPoints((prev) => prev + pkg.points);
+          Alert.alert(
+            'Purchase Complete!',
+            `${pkg.points} points have been added to your account.`,
+          );
+        }
+      } catch (err: any) {
+        Alert.alert('Error', err.message ?? 'Something went wrong');
+      } finally {
+        setBuyingPackage(null);
+      }
     },
-    [],
+    [initPaymentSheet, presentPaymentSheet],
   );
 
   const handleSendGift = useCallback(
@@ -147,11 +199,16 @@ export default function ShopScreen() {
             <Text style={styles.packagePtsLabel}>points</Text>
             <Text style={styles.packagePrice}>{pkg.price}</Text>
             <TouchableOpacity
-              style={styles.buyButton}
+              style={[styles.buyButton, buyingPackage === pkg.id && styles.buyButtonLoading]}
               activeOpacity={0.8}
               onPress={() => handleBuy(pkg)}
+              disabled={buyingPackage !== null}
             >
-              <Text style={styles.buyButtonText}>Buy</Text>
+              {buyingPackage === pkg.id ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Text style={styles.buyButtonText}>Buy</Text>
+              )}
             </TouchableOpacity>
           </View>
         ))}
@@ -430,6 +487,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 24,
+    minWidth: 64,
+    alignItems: 'center',
+  },
+  buyButtonLoading: {
+    opacity: 0.7,
   },
   buyButtonText: {
     fontFamily: fontFamily.bodySemibold,
