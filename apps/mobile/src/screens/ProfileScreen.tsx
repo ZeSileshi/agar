@@ -9,13 +9,18 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import { useProfileStore } from '../store/profile-store';
+import { COUNTRIES, getCitiesForCountry } from '../data/locations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const TOTAL_PHOTO_SLOTS = 6;
 
 const INTERESTS = [
   'Cooking', 'Fitness', 'Yoga', 'Meditation', 'Reading', 'Photography',
@@ -25,37 +30,106 @@ const INTERESTS = [
   'Swimming', 'Camping', 'Gardening', 'Board Games', 'Ethiopian Food', 'Traditional Music',
 ];
 
+type Gender = 'Male' | 'Female' | 'Non-binary';
+type LookingFor = 'Men' | 'Women' | 'Everyone';
+
 interface ProfileScreenProps {
   onLogout?: () => void;
 }
 
 export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
-  const { firstName: storedName, primaryPhoto, photos: storedPhotos } = useProfileStore();
-  const [displayName, setDisplayName] = useState(storedName || 'Dawit');
+  const { firstName: storedName, primaryPhoto, photos: storedPhotos, setPhotos } = useProfileStore();
+
+  const [isEditing, setIsEditing] = useState(false);
   const [bio, setBio] = useState('Coffee lover and stargazer. Looking for someone to explore the cosmos with.');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([
     'Coffee', 'Astronomy', 'Hiking', 'Photography', 'Ethiopian Food',
   ]);
-  const [isEditing, setIsEditing] = useState(false);
 
-  const mockProfile = {
-    firstName: storedName || 'Dawit',
-    age: 28,
-    location: 'Addis Ababa, Ethiopia',
-    gender: 'Male',
-    lookingFor: 'Women',
-    sunSign: 'Leo',
-    sunSignEmoji: '♌',
-    chineseZodiac: 'Dragon',
-    chineseEmoji: '🐉',
-    palmReading: true,
-    joinedDate: 'March 2026',
-    photos: [
-      ...storedPhotos,
-      ...Array(Math.max(0, 6 - storedPhotos.length)).fill(null),
-    ] as (string | null)[],
+  // Editable preferences
+  const [gender, setGender] = useState<Gender>('Male');
+  const [lookingFor, setLookingFor] = useState<LookingFor>('Women');
+  const [ageMin, setAgeMin] = useState('22');
+  const [ageMax, setAgeMax] = useState('35');
+
+  // Match location preference
+  const [matchCountryCode, setMatchCountryCode] = useState('');
+  const [matchCity, setMatchCity] = useState('');
+
+  // Modals
+  const [showGenderPicker, setShowGenderPicker] = useState(false);
+  const [showLookingForPicker, setShowLookingForPicker] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+
+  const matchCountry = COUNTRIES.find((c) => c.code === matchCountryCode);
+  const matchCities = matchCountryCode ? getCitiesForCountry(matchCountryCode) : [];
+
+  // Build photo slots
+  const photoSlots: (string | null)[] = [
+    ...storedPhotos,
+    ...Array(Math.max(0, TOTAL_PHOTO_SLOTS - storedPhotos.length)).fill(null),
+  ];
+
+  const profileName = storedName || 'User';
+
+  /* ---- Photo picker ---- */
+  const handlePhotoTap = async (index: number) => {
+    if (!isEditing) return;
+
+    const existing = photoSlots[index];
+
+    if (existing) {
+      Alert.alert('Photo Options', '', [
+        { text: 'Replace', onPress: () => pickPhoto(index) },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            const updated = storedPhotos.filter((_, i) => i !== index);
+            setPhotos(updated);
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+
+    await pickPhoto(index);
   };
 
+  const pickPhoto = async (index: number) => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission Required', 'Please allow photo library access.');
+      return;
+    }
+
+    const emptySlots = photoSlots.slice(index).filter((p) => p === null).length;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: emptySlots > 1,
+      selectionLimit: emptySlots,
+      allowsEditing: emptySlots <= 1,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const newPhotos = [...photoSlots];
+      let slotIdx = index;
+      for (const asset of result.assets) {
+        while (slotIdx < TOTAL_PHOTO_SLOTS && newPhotos[slotIdx] !== null) slotIdx++;
+        if (slotIdx >= TOTAL_PHOTO_SLOTS) break;
+        newPhotos[slotIdx] = asset.uri;
+        slotIdx++;
+      }
+      setPhotos(newPhotos.filter((p): p is string => p !== null));
+    }
+  };
+
+  /* ---- Interests ---- */
   const toggleInterest = (interest: string) => {
     setSelectedInterests((prev) =>
       prev.includes(interest)
@@ -66,6 +140,7 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
     );
   };
 
+  /* ---- Save ---- */
   const handleSave = () => {
     setIsEditing(false);
     Alert.alert('Profile Updated', 'Your changes have been saved.');
@@ -87,30 +162,39 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
 
         {/* Profile card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarWrap}>
+          <TouchableOpacity
+            style={styles.avatarWrap}
+            onPress={() => isEditing && pickPhoto(0)}
+            activeOpacity={isEditing ? 0.7 : 1}
+          >
             {primaryPhoto ? (
               <Image source={{ uri: primaryPhoto }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{mockProfile.firstName[0]}</Text>
+                <Text style={styles.avatarText}>{profileName[0]}</Text>
+              </View>
+            )}
+            {isEditing && (
+              <View style={styles.avatarEditBadge}>
+                <Text style={styles.avatarEditIcon}>📷</Text>
               </View>
             )}
             <View style={styles.onlineDot} />
-          </View>
-          <Text style={styles.profileName}>{mockProfile.firstName}, {mockProfile.age}</Text>
-          <Text style={styles.profileLocation}>{mockProfile.location}</Text>
+          </TouchableOpacity>
+          <Text style={styles.profileName}>{profileName}, 28</Text>
+          <Text style={styles.profileLocation}>
+            {matchCountry ? `${matchCountry.flag} ${matchCity || matchCountry.name}` : 'Set your location'}
+          </Text>
           <View style={styles.profileBadges}>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{mockProfile.sunSignEmoji} {mockProfile.sunSign}</Text>
+              <Text style={styles.badgeText}>♌ Leo</Text>
             </View>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{mockProfile.chineseEmoji} {mockProfile.chineseZodiac}</Text>
+              <Text style={styles.badgeText}>🐉 Dragon</Text>
             </View>
-            {mockProfile.palmReading && (
-              <View style={[styles.badge, styles.badgeGold]}>
-                <Text style={styles.badgeTextGold}>🤚 Palm Read</Text>
-              </View>
-            )}
+            <View style={[styles.badge, styles.badgeGold]}>
+              <Text style={styles.badgeTextGold}>🤚 Palm Read</Text>
+            </View>
           </View>
         </View>
 
@@ -130,22 +214,36 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
           ) : (
             <Text style={styles.bioText}>{bio}</Text>
           )}
-          {isEditing && (
-            <Text style={styles.charCount}>{bio.length}/500</Text>
-          )}
+          {isEditing && <Text style={styles.charCount}>{bio.length}/500</Text>}
         </View>
 
         {/* Photos */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Photos</Text>
+          <Text style={styles.sectionTitle}>Photos {isEditing && '(tap to change)'}</Text>
           <View style={styles.photoGrid}>
-            {mockProfile.photos.map((photo, i) => (
-              <TouchableOpacity key={i} style={[styles.photoSlot, photo && styles.photoSlotFilled]} activeOpacity={0.7}>
+            {photoSlots.map((photo, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.photoSlot,
+                  photo && styles.photoSlotFilled,
+                  isEditing && styles.photoSlotEditing,
+                ]}
+                onPress={() => handlePhotoTap(i)}
+                activeOpacity={isEditing ? 0.7 : 1}
+              >
                 {photo ? (
-                  <Image source={{ uri: photo }} style={styles.photoImage} />
+                  <>
+                    <Image source={{ uri: photo }} style={styles.photoImage} />
+                    {isEditing && (
+                      <View style={styles.photoEditOverlay}>
+                        <Text style={styles.photoEditIcon}>✎</Text>
+                      </View>
+                    )}
+                  </>
                 ) : (
                   <View style={styles.photoPlaceholder}>
-                    <Text style={styles.photoPlus}>+</Text>
+                    <Text style={styles.photoPlus}>{isEditing ? '+' : ''}</Text>
                     <Text style={styles.photoLabel}>{i < 3 ? 'Required' : 'Optional'}</Text>
                   </View>
                 )}
@@ -154,28 +252,13 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* Astrology & Compatibility */}
+        {/* Astrology */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Astrology Profile</Text>
           <View style={styles.astroCards}>
-            <View style={styles.astroCard}>
-              <Text style={styles.astroEmoji}>{mockProfile.sunSignEmoji}</Text>
-              <Text style={styles.astroLabel}>Western</Text>
-              <Text style={styles.astroValue}>{mockProfile.sunSign}</Text>
-              <Text style={styles.astroSub}>Fire Sign</Text>
-            </View>
-            <View style={styles.astroCard}>
-              <Text style={styles.astroEmoji}>{mockProfile.chineseEmoji}</Text>
-              <Text style={styles.astroLabel}>Chinese</Text>
-              <Text style={styles.astroValue}>{mockProfile.chineseZodiac}</Text>
-              <Text style={styles.astroSub}>Wood Element</Text>
-            </View>
-            <View style={styles.astroCard}>
-              <Text style={styles.astroEmoji}>🤚</Text>
-              <Text style={styles.astroLabel}>Palmistry</Text>
-              <Text style={styles.astroValue}>Complete</Text>
-              <Text style={styles.astroSub}>4 lines read</Text>
-            </View>
+            <AstroCard emoji="♌" label="Western" value="Leo" sub="Fire Sign" />
+            <AstroCard emoji="🐉" label="Chinese" value="Dragon" sub="Wood Element" />
+            <AstroCard emoji="🤚" label="Palmistry" value="Complete" sub="4 lines read" />
           </View>
         </View>
 
@@ -208,22 +291,140 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.prefList}>
-            <PrefRow label="Gender" value={mockProfile.gender} />
-            <PrefRow label="Looking for" value={mockProfile.lookingFor} />
-            <PrefRow label="Age range" value="22 — 35" />
-            <PrefRow label="Distance" value="Within 50 km" />
-            <PrefRow label="Joined" value={mockProfile.joinedDate} />
+            <EditablePrefRow
+              label="Gender"
+              value={gender}
+              isEditing={isEditing}
+              onPress={() => setShowGenderPicker(true)}
+            />
+            <EditablePrefRow
+              label="Looking for"
+              value={lookingFor}
+              isEditing={isEditing}
+              onPress={() => setShowLookingForPicker(true)}
+            />
+            {isEditing ? (
+              <View style={styles.prefRow}>
+                <Text style={styles.prefLabel}>Age range</Text>
+                <View style={styles.ageInputRow}>
+                  <TextInput
+                    style={styles.ageInput}
+                    value={ageMin}
+                    onChangeText={(t) => setAgeMin(t.replace(/\D/g, '').slice(0, 2))}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                  <Text style={styles.ageDash}>—</Text>
+                  <TextInput
+                    style={styles.ageInput}
+                    value={ageMax}
+                    onChangeText={(t) => setAgeMax(t.replace(/\D/g, '').slice(0, 2))}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </View>
+              </View>
+            ) : (
+              <PrefRow label="Age range" value={`${ageMin} — ${ageMax}`} />
+            )}
           </View>
         </View>
 
-        {/* Account actions */}
+        {/* Match Location Preference */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Match Location</Text>
+          <Text style={styles.sectionSubtitle}>Find matches in a specific country or city</Text>
+          <View style={styles.prefList}>
+            <EditablePrefRow
+              label="Country"
+              value={matchCountry ? `${matchCountry.flag} ${matchCountry.name}` : 'Any country'}
+              isEditing={isEditing}
+              onPress={() => setShowCountryPicker(true)}
+            />
+            <EditablePrefRow
+              label="City"
+              value={matchCity || 'Any city'}
+              isEditing={isEditing}
+              onPress={() => {
+                if (!matchCountryCode) {
+                  Alert.alert('Select Country', 'Choose a country first.');
+                  return;
+                }
+                setShowCityPicker(true);
+              }}
+            />
+          </View>
+          {isEditing && matchCountryCode && (
+            <TouchableOpacity
+              style={styles.clearLocationBtn}
+              onPress={() => { setMatchCountryCode(''); setMatchCity(''); }}
+            >
+              <Text style={styles.clearLocationText}>Clear location preference</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Account */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Picker modals */}
+      <OptionPicker
+        visible={showGenderPicker}
+        title="I am"
+        options={['Male', 'Female', 'Non-binary']}
+        selected={gender}
+        onSelect={(v) => { setGender(v as Gender); setShowGenderPicker(false); }}
+        onClose={() => setShowGenderPicker(false)}
+      />
+      <OptionPicker
+        visible={showLookingForPicker}
+        title="Looking for"
+        options={['Men', 'Women', 'Everyone']}
+        selected={lookingFor}
+        onSelect={(v) => { setLookingFor(v as LookingFor); setShowLookingForPicker(false); }}
+        onClose={() => setShowLookingForPicker(false)}
+      />
+      <SearchablePicker
+        visible={showCountryPicker}
+        title="Preferred Country"
+        items={[
+          { key: '', label: 'Any country' },
+          ...COUNTRIES.map((c) => ({ key: c.code, label: `${c.flag}  ${c.name}` })),
+        ]}
+        selected={matchCountryCode}
+        onSelect={(v) => { setMatchCountryCode(v); setMatchCity(''); setShowCountryPicker(false); }}
+        onClose={() => setShowCountryPicker(false)}
+      />
+      <SearchablePicker
+        visible={showCityPicker}
+        title="Preferred City"
+        items={[
+          { key: '', label: 'Any city' },
+          ...matchCities.map((c) => ({ key: c, label: c })),
+        ]}
+        selected={matchCity}
+        onSelect={(v) => { setMatchCity(v); setShowCityPicker(false); }}
+        onClose={() => setShowCityPicker(false)}
+      />
     </SafeAreaView>
+  );
+}
+
+/* ---------- Helper components ---------- */
+
+function AstroCard({ emoji, label, value, sub }: { emoji: string; label: string; value: string; sub: string }) {
+  return (
+    <View style={styles.astroCard}>
+      <Text style={styles.astroEmoji}>{emoji}</Text>
+      <Text style={styles.astroLabel}>{label}</Text>
+      <Text style={styles.astroValue}>{value}</Text>
+      <Text style={styles.astroSub}>{sub}</Text>
+    </View>
   );
 }
 
@@ -236,324 +437,275 @@ function PrefRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
+function EditablePrefRow({ label, value, isEditing, onPress }: {
+  label: string; value: string; isEditing: boolean; onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.prefRow}
+      onPress={isEditing ? onPress : undefined}
+      activeOpacity={isEditing ? 0.7 : 1}
+    >
+      <Text style={styles.prefLabel}>{label}</Text>
+      <View style={styles.prefValueRow}>
+        <Text style={[styles.prefValue, isEditing && styles.prefValueEditable]}>{value}</Text>
+        {isEditing && <Text style={styles.prefChevron}>›</Text>}
+      </View>
+    </TouchableOpacity>
+  );
+}
 
-  // Header
+function OptionPicker({ visible, title, options, selected, onSelect, onClose }: {
+  visible: boolean; title: string; options: string[]; selected: string;
+  onSelect: (v: string) => void; onClose: () => void;
+}) {
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.modalClose}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          {options.map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[styles.modalRow, selected === opt && styles.modalRowSelected]}
+              onPress={() => onSelect(opt)}
+            >
+              <Text style={[styles.modalRowText, selected === opt && styles.modalRowTextSelected]}>
+                {opt}
+              </Text>
+              {selected === opt && <Text style={styles.modalCheck}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function SearchablePicker({ visible, title, items, selected, onSelect, onClose }: {
+  visible: boolean; title: string;
+  items: { key: string; label: string }[];
+  selected: string;
+  onSelect: (key: string) => void; onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = search
+    ? items.filter((i) => i.label.toLowerCase().includes(search.toLowerCase()))
+    : items;
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { maxHeight: '65%' }]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.modalClose}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          {items.length > 6 && (
+            <View style={styles.searchWrap}>
+              <TextInput
+                style={styles.searchInput}
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search..."
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+          )}
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {filtered.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.modalRow, selected === item.key && styles.modalRowSelected]}
+                onPress={() => { onSelect(item.key); setSearch(''); }}
+              >
+                <Text style={[styles.modalRowText, selected === item.key && styles.modalRowTextSelected]}>
+                  {item.label}
+                </Text>
+                {selected === item.key && <Text style={styles.modalCheck}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/* ---------- Styles ---------- */
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
+
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16,
   },
-  headerTitle: {
-    fontFamily: fontFamily.displayBold,
-    fontSize: 28,
-    color: '#faf5eb',
-  },
-  editBtn: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 15,
-    color: colors.gold,
-  },
+  headerTitle: { fontFamily: fontFamily.displayBold, fontSize: 28, color: '#faf5eb' },
+  editBtn: { fontFamily: fontFamily.bodySemibold, fontSize: 15, color: colors.gold },
 
   // Profile card
   profileCard: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(212,165,74,0.1)',
-    marginBottom: 20,
+    alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, padding: 24,
+    borderWidth: 1, borderColor: 'rgba(212,165,74,0.1)', marginBottom: 20,
   },
-  avatarWrap: {
-    position: 'relative',
-    marginBottom: 12,
-  },
+  avatarWrap: { position: 'relative', marginBottom: 12 },
   avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: 'rgba(212,165,74,0.15)',
-    borderWidth: 2,
-    borderColor: colors.gold,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(212,165,74,0.15)',
+    borderWidth: 2, borderColor: colors.gold, justifyContent: 'center', alignItems: 'center',
   },
-  avatarImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 2,
-    borderColor: colors.gold,
+  avatarImage: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: colors.gold },
+  avatarText: { fontFamily: fontFamily.displayExtrabold, fontSize: 36, color: colors.gold },
+  avatarEditBadge: {
+    position: 'absolute', bottom: 0, right: -4, width: 28, height: 28, borderRadius: 14,
+    backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: colors.surface,
   },
-  avatarText: {
-    fontFamily: fontFamily.displayExtrabold,
-    fontSize: 36,
-    color: colors.gold,
-  },
+  avatarEditIcon: { fontSize: 14 },
   onlineDot: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.success,
-    borderWidth: 3,
-    borderColor: colors.surface,
+    position: 'absolute', bottom: 4, right: 4, width: 16, height: 16, borderRadius: 8,
+    backgroundColor: colors.success, borderWidth: 3, borderColor: colors.surface,
   },
-  profileName: {
-    fontFamily: fontFamily.displayBold,
-    fontSize: 22,
-    color: '#faf5eb',
-    marginBottom: 4,
-  },
-  profileLocation: {
-    fontFamily: fontFamily.body,
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: 12,
-  },
-  profileBadges: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
+  profileName: { fontFamily: fontFamily.displayBold, fontSize: 22, color: '#faf5eb', marginBottom: 4 },
+  profileLocation: { fontFamily: fontFamily.body, fontSize: 14, color: colors.textMuted, marginBottom: 12 },
+  profileBadges: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
   badge: {
-    backgroundColor: 'rgba(232,221,208,0.06)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(232,221,208,0.1)',
+    backgroundColor: 'rgba(232,221,208,0.06)', borderRadius: 999, paddingHorizontal: 12,
+    paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(232,221,208,0.1)',
   },
-  badgeGold: {
-    borderColor: 'rgba(212,165,74,0.25)',
-    backgroundColor: 'rgba(212,165,74,0.08)',
-  },
-  badgeText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 12,
-    color: 'rgba(232,221,208,0.6)',
-  },
-  badgeTextGold: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 12,
-    color: colors.gold,
-  },
+  badgeGold: { borderColor: 'rgba(212,165,74,0.25)', backgroundColor: 'rgba(212,165,74,0.08)' },
+  badgeText: { fontFamily: fontFamily.bodyMedium, fontSize: 12, color: 'rgba(232,221,208,0.6)' },
+  badgeTextGold: { fontFamily: fontFamily.bodyMedium, fontSize: 12, color: colors.gold },
 
   // Sections
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  section: { marginBottom: 24 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 14,
-    color: colors.goldLight,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 12,
+    fontFamily: fontFamily.bodySemibold, fontSize: 14, color: colors.goldLight,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12,
   },
-  sectionCount: {
-    fontFamily: fontFamily.body,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: 12,
+  sectionSubtitle: {
+    fontFamily: fontFamily.body, fontSize: 13, color: colors.textMuted, marginBottom: 12, marginTop: -8,
   },
+  sectionCount: { fontFamily: fontFamily.body, fontSize: 12, color: colors.textMuted, marginBottom: 12 },
 
   // Bio
-  bioText: {
-    fontFamily: fontFamily.body,
-    fontSize: 15,
-    color: 'rgba(232,221,208,0.7)',
-    lineHeight: 22,
-  },
+  bioText: { fontFamily: fontFamily.body, fontSize: 15, color: 'rgba(232,221,208,0.7)', lineHeight: 22 },
   bioInput: {
-    fontFamily: fontFamily.body,
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(232,221,208,0.1)',
-    minHeight: 100,
-    textAlignVertical: 'top',
+    fontFamily: fontFamily.body, fontSize: 15, color: colors.text, lineHeight: 22,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: 'rgba(232,221,208,0.1)', minHeight: 100, textAlignVertical: 'top',
   },
-  charCount: {
-    fontFamily: fontFamily.body,
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'right',
-    marginTop: 4,
-  },
+  charCount: { fontFamily: fontFamily.body, fontSize: 12, color: colors.textMuted, textAlign: 'right', marginTop: 4 },
 
   // Photos
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   photoSlot: {
-    width: (SCREEN_WIDTH - 48 - 20) / 3,
-    aspectRatio: 3 / 4,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(232,221,208,0.1)',
-    borderStyle: 'dashed',
-    backgroundColor: colors.surface,
+    width: (SCREEN_WIDTH - 48 - 20) / 3, aspectRatio: 3 / 4, borderRadius: 14, overflow: 'hidden',
+    borderWidth: 1.5, borderColor: 'rgba(232,221,208,0.1)', borderStyle: 'dashed', backgroundColor: colors.surface,
   },
-  photoSlotFilled: {
-    borderStyle: 'solid',
-    borderColor: 'rgba(212,165,74,0.2)',
-    borderWidth: 1,
+  photoSlotFilled: { borderStyle: 'solid', borderColor: 'rgba(212,165,74,0.2)', borderWidth: 1 },
+  photoSlotEditing: { borderColor: colors.gold },
+  photoImage: { width: '100%', height: '100%', borderRadius: 13 },
+  photoEditOverlay: {
+    ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center', alignItems: 'center', borderRadius: 13,
   },
-  photoImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 13,
-  },
-  photoPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-  },
-  photoPlus: {
-    fontSize: 24,
-    color: colors.goldLight,
-    fontWeight: '300',
-  },
+  photoEditIcon: { fontSize: 20, color: '#fff' },
+  photoPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 4 },
+  photoPlus: { fontSize: 24, color: colors.goldLight, fontWeight: '300' },
   photoLabel: {
-    fontFamily: fontFamily.body,
-    fontSize: 9,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: fontFamily.body, fontSize: 9, color: colors.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.5,
   },
 
   // Astrology
-  astroCards: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  astroCards: { flexDirection: 'row', gap: 10 },
   astroCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(212,165,74,0.1)',
-    gap: 4,
+    flex: 1, backgroundColor: colors.surface, borderRadius: 14, padding: 14, alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(212,165,74,0.1)', gap: 4,
   },
-  astroEmoji: {
-    fontSize: 28,
-    marginBottom: 4,
-  },
-  astroLabel: {
-    fontFamily: fontFamily.body,
-    fontSize: 10,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  astroValue: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 14,
-    color: colors.goldLight,
-  },
-  astroSub: {
-    fontFamily: fontFamily.body,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
+  astroEmoji: { fontSize: 28, marginBottom: 4 },
+  astroLabel: { fontFamily: fontFamily.body, fontSize: 10, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  astroValue: { fontFamily: fontFamily.bodySemibold, fontSize: 14, color: colors.goldLight },
+  astroSub: { fontFamily: fontFamily.body, fontSize: 11, color: colors.textMuted },
 
   // Interests
-  interestsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
+  interestsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   interestChip: {
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(232,221,208,0.08)',
+    backgroundColor: colors.surface, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: 'rgba(232,221,208,0.08)',
   },
-  interestChipSelected: {
-    borderColor: colors.gold,
-    backgroundColor: 'rgba(212,165,74,0.1)',
-  },
-  interestText: {
-    fontFamily: fontFamily.body,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  interestTextSelected: {
-    fontFamily: fontFamily.bodyMedium,
-    color: colors.goldLight,
-  },
+  interestChipSelected: { borderColor: colors.gold, backgroundColor: 'rgba(212,165,74,0.1)' },
+  interestText: { fontFamily: fontFamily.body, fontSize: 13, color: colors.textMuted },
+  interestTextSelected: { fontFamily: fontFamily.bodyMedium, color: colors.goldLight },
 
   // Preferences
   prefList: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(232,221,208,0.06)',
-    overflow: 'hidden',
+    backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1,
+    borderColor: 'rgba(232,221,208,0.06)', overflow: 'hidden',
   },
   prefRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1,
     borderBottomColor: 'rgba(232,221,208,0.05)',
   },
-  prefLabel: {
-    fontFamily: fontFamily.body,
-    fontSize: 14,
-    color: colors.textMuted,
+  prefLabel: { fontFamily: fontFamily.body, fontSize: 14, color: colors.textMuted },
+  prefValue: { fontFamily: fontFamily.bodyMedium, fontSize: 14, color: colors.text },
+  prefValueEditable: { color: colors.gold },
+  prefValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  prefChevron: { fontFamily: fontFamily.body, fontSize: 18, color: colors.gold },
+  ageInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ageInput: {
+    width: 44, backgroundColor: 'rgba(232,221,208,0.06)', borderRadius: 8,
+    paddingVertical: 6, paddingHorizontal: 10, fontFamily: fontFamily.bodyMedium,
+    fontSize: 14, color: colors.gold, textAlign: 'center',
   },
-  prefValue: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 14,
-    color: colors.text,
-  },
+  ageDash: { fontFamily: fontFamily.body, fontSize: 14, color: colors.textMuted },
+  clearLocationBtn: { alignItems: 'center', marginTop: 10 },
+  clearLocationText: { fontFamily: fontFamily.body, fontSize: 13, color: colors.textMuted, textDecorationLine: 'underline' },
 
   // Logout
   logoutBtn: {
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.3)',
-    backgroundColor: 'rgba(239,68,68,0.06)',
-    borderRadius: 999,
-    paddingVertical: 15,
-    alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.06)',
+    borderRadius: 999, paddingVertical: 15, alignItems: 'center',
   },
-  logoutText: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 15,
-    color: '#ef4444',
+  logoutText: { fontFamily: fontFamily.bodySemibold, fontSize: 15, color: '#ef4444' },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalContent: {
+    backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    maxHeight: '50%', paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, paddingVertical: 18, borderBottomWidth: 1,
+    borderBottomColor: 'rgba(232,221,208,0.1)',
+  },
+  modalTitle: { fontFamily: fontFamily.displayBold, fontSize: 18, color: colors.text },
+  modalClose: { fontFamily: fontFamily.bodySemibold, fontSize: 16, color: colors.goldLight },
+  modalRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, paddingVertical: 14,
+  },
+  modalRowSelected: { backgroundColor: 'rgba(212,165,74,0.1)' },
+  modalRowText: { fontFamily: fontFamily.body, fontSize: 16, color: colors.text },
+  modalRowTextSelected: { fontFamily: fontFamily.bodySemibold, color: colors.goldLight },
+  modalCheck: { fontFamily: fontFamily.bodySemibold, fontSize: 16, color: colors.gold },
+  searchWrap: {
+    paddingHorizontal: 24, paddingVertical: 10, borderBottomWidth: 1,
+    borderBottomColor: 'rgba(232,221,208,0.06)',
+  },
+  searchInput: {
+    backgroundColor: 'rgba(232,221,208,0.06)', borderRadius: 10, paddingHorizontal: 14,
+    paddingVertical: 10, fontFamily: fontFamily.body, fontSize: 15, color: colors.text,
   },
 });
