@@ -18,18 +18,21 @@ const REQUIRED_PHOTOS = 3;
 interface PhotoUploadScreenProps {
   onContinue: (photos: string[]) => void;
   onBack: () => void;
+  optional?: boolean;
 }
 
 export default function PhotoUploadScreen({
   onContinue,
   onBack,
+  optional = false,
 }: PhotoUploadScreenProps) {
   const [photos, setPhotos] = useState<(string | null)[]>(
     Array(TOTAL_SLOTS).fill(null)
   );
 
   const photoCount = photos.filter((p) => p !== null).length;
-  const canContinue = photoCount >= REQUIRED_PHOTOS;
+  const minRequired = optional ? 0 : REQUIRED_PHOTOS;
+  const canContinue = photoCount >= minRequired;
 
   const pickImage = async (index: number) => {
     // If photo exists at this slot, offer to remove it
@@ -116,18 +119,20 @@ export default function PhotoUploadScreen({
         <View style={styles.progressRow}>
           <View style={[styles.progressDot, styles.progressDotActive]} />
           <View style={[styles.progressDot, styles.progressDotActive]} />
-          <View style={styles.progressDot} />
+          {!optional && <View style={styles.progressDot} />}
         </View>
 
-        <Text style={styles.heading}>Add Your Photos</Text>
+        <Text style={styles.heading}>{optional ? 'Add Photos (Optional)' : 'Add Your Photos'}</Text>
         <Text style={styles.subheading}>
-          Show your best self. First 3 are required.
+          {optional
+            ? 'Photos are optional for referrers. You can add them later or skip this step.'
+            : 'Show your best self. First 3 are required.'}
         </Text>
 
         {/* Photo Grid */}
         <View style={styles.grid}>
           {photos.map((photo, index) => {
-            const isRequired = index < REQUIRED_PHOTOS;
+            const isRequired = !optional && index < REQUIRED_PHOTOS;
             const hasPhoto = photo !== null;
 
             return (
@@ -177,9 +182,13 @@ export default function PhotoUploadScreen({
         {/* Helper text */}
         <View style={styles.helperRow}>
           <Text style={styles.helperText}>
-            {photoCount < REQUIRED_PHOTOS
-              ? `${REQUIRED_PHOTOS - photoCount} more photo${REQUIRED_PHOTOS - photoCount > 1 ? 's' : ''} required`
-              : `${photoCount} photo${photoCount > 1 ? 's' : ''} added`}
+            {optional
+              ? photoCount === 0
+                ? 'No photos added — you can skip'
+                : `${photoCount} photo${photoCount > 1 ? 's' : ''} added`
+              : photoCount < REQUIRED_PHOTOS
+                ? `${REQUIRED_PHOTOS - photoCount} more photo${REQUIRED_PHOTOS - photoCount > 1 ? 's' : ''} required`
+                : `${photoCount} photo${photoCount > 1 ? 's' : ''} added`}
           </Text>
           {canContinue && (
             <Text style={styles.helperSuccess}>Ready to continue</Text>
@@ -210,7 +219,9 @@ export default function PhotoUploadScreen({
           disabled={!canContinue}
           activeOpacity={0.8}
         >
-          <Text style={styles.continueBtnText}>Continue</Text>
+          <Text style={styles.continueBtnText}>
+            {optional && photoCount === 0 ? 'Skip Photos' : 'Continue'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -125,7 +125,8 @@ export default function App() {
       case 'userType':
         return <UserTypeScreen onContinue={() => setScreen('basicInfo')} />;
 
-      case 'basicInfo':
+      case 'basicInfo': {
+        const isReferrer = useAuthStore.getState().userType === 'referrer';
         return (
           <BasicInfoScreen
             onContinue={(data) => {
@@ -135,17 +136,28 @@ export default function App() {
             onBack={() => setScreen('userType')}
           />
         );
+      }
 
-      case 'photoUpload':
+      case 'photoUpload': {
+        const isReferrer = useAuthStore.getState().userType === 'referrer';
         return (
           <PhotoUploadScreen
             onContinue={(photos) => {
               useProfileStore.getState().setPhotos(photos);
-              setScreen('palmScan');
+              // Referrers skip palm scan — go straight to home
+              if (isReferrer) {
+                completeOnboarding();
+                enableBiometric();
+                setScreen('home');
+              } else {
+                setScreen('palmScan');
+              }
             }}
             onBack={() => setScreen('basicInfo')}
+            optional={isReferrer}
           />
         );
+      }
 
       case 'palmScan':
         return (
