@@ -23,7 +23,7 @@ import UserTypeScreen from './screens/auth/UserTypeScreen';
 import BasicInfoScreen from './screens/onboarding/BasicInfoScreen';
 import PhotoUploadScreen from './screens/onboarding/PhotoUploadScreen';
 import PalmScanScreen from './screens/onboarding/PalmScanScreen';
-import DiscoveryScreen from './screens/DiscoveryScreen';
+import HomeScreen from './screens/HomeScreen';
 
 // Initialize i18n
 initI18n('en');
@@ -39,7 +39,7 @@ type Screen =
   | 'basicInfo'
   | 'photoUpload'
   | 'palmScan'
-  | 'discovery';
+  | 'home';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
@@ -67,7 +67,7 @@ export default function App() {
     if ((fontsLoaded || fontError) && isHydrated) {
       // Returning user with completed onboarding → straight to discovery
       if (isAuthenticated && onboardingComplete) {
-        setScreen('discovery');
+        setScreen('home');
       }
       setAppReady(true);
       SplashScreen.hideAsync().catch(() => {});
@@ -118,14 +118,14 @@ export default function App() {
           <PalmScanScreen
             onContinue={(_reading) => {
               completeOnboarding();
-              setScreen('discovery');
+              setScreen('home');
             }}
             onBack={() => setScreen('photoUpload')}
           />
         );
 
-      case 'discovery':
-        return <DiscoveryScreen />;
+      case 'home':
+        return <HomeScreen />;
     }
   };
 

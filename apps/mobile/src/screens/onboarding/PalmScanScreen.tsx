@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  ScrollView,
   Image,
   Animated,
   ActivityIndicator,
@@ -13,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import Svg, { Path, Text as SvgText, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
 
@@ -21,101 +20,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAMERA_SIZE = SCREEN_WIDTH - 48;
 
 /* ------------------------------------------------------------------ */
-/*  Palm line options                                                   */
+/*  AI-detected reading result (simulated for now)                      */
 /* ------------------------------------------------------------------ */
-
-interface LineOption {
-  value: string;
-  label: string;
-  description: string;
-}
-
-const HEART_LINE_OPTIONS: LineOption[] = [
-  { value: 'long_curved', label: 'Long & Curved', description: 'Sweeps across palm in a wide curve' },
-  { value: 'short_straight', label: 'Short & Straight', description: 'Short line, mostly straight' },
-  { value: 'long_straight', label: 'Long & Straight', description: 'Reaches across palm, stays straight' },
-  { value: 'curved_to_index', label: 'Curves to Index Finger', description: 'Curves upward toward index finger' },
-  { value: 'curved_to_middle', label: 'Curves to Middle Finger', description: 'Curves upward toward middle finger' },
-  { value: 'short', label: 'Short', description: 'Barely extends across the palm' },
-];
-
-const HEAD_LINE_OPTIONS: LineOption[] = [
-  { value: 'long_straight', label: 'Long & Straight', description: 'Runs straight across the middle of palm' },
-  { value: 'short', label: 'Short', description: 'Only extends partway across palm' },
-  { value: 'curved', label: 'Curved', description: 'Curves downward toward the wrist' },
-  { value: 'deep', label: 'Deep & Clear', description: 'Very visible, deeply etched line' },
-  { value: 'wavy', label: 'Wavy', description: 'Undulates instead of staying straight' },
-  { value: 'broken', label: 'Broken / Split', description: 'Has gaps or splits into branches' },
-];
-
-const LIFE_LINE_OPTIONS: LineOption[] = [
-  { value: 'long_deep', label: 'Long & Deep', description: 'Sweeps wide around thumb, very clear' },
-  { value: 'short_shallow', label: 'Short & Shallow', description: 'Faint and doesn\'t extend far' },
-  { value: 'curved', label: 'Curved', description: 'Forms a wide semicircle around thumb' },
-  { value: 'close_to_thumb', label: 'Close to Thumb', description: 'Stays tight near the thumb' },
-  { value: 'wide_arc', label: 'Wide Arc', description: 'Arcs far out toward center of palm' },
-  { value: 'broken', label: 'Broken / Split', description: 'Has breaks or branches off' },
-];
-
-const FATE_LINE_OPTIONS: LineOption[] = [
-  { value: 'deep_clear', label: 'Deep & Clear', description: 'Runs straight up the center, very visible' },
-  { value: 'broken', label: 'Broken', description: 'Has gaps or shifts direction' },
-  { value: 'starts_from_life', label: 'From Life Line', description: 'Branches off from the life line' },
-  { value: 'joins_life_middle', label: 'Joins Life Line', description: 'Merges with life line partway' },
-  { value: 'faint', label: 'Faint / None', description: 'Hard to see or very light' },
-];
-
-interface StepConfig {
-  key: string;
-  title: string;
-  aiTip: string;
-  findIt: string;
-  highlightLine: 'heart' | 'head' | 'life' | 'fate';
-  options: LineOption[];
-  optional?: boolean;
-}
-
-const STEPS: StepConfig[] = [
-  {
-    key: 'heart',
-    title: 'Heart Line',
-    aiTip: 'This line reveals your emotional nature and how you experience love.',
-    findIt: 'The top horizontal line across your upper palm, just below your fingers.',
-    highlightLine: 'heart',
-    options: HEART_LINE_OPTIONS,
-  },
-  {
-    key: 'head',
-    title: 'Head Line',
-    aiTip: 'This line reflects your thinking style — intuitive vs analytical.',
-    findIt: 'The line running horizontally across the middle of your palm, just below the heart line.',
-    highlightLine: 'head',
-    options: HEAD_LINE_OPTIONS,
-  },
-  {
-    key: 'life',
-    title: 'Life Line',
-    aiTip: 'Your life line shows vitality and energy — not lifespan, but how fully you live.',
-    findIt: 'The curved line arcing around the base of your thumb.',
-    highlightLine: 'life',
-    options: LIFE_LINE_OPTIONS,
-  },
-  {
-    key: 'fate',
-    title: 'Fate Line',
-    aiTip: 'The fate line reflects life direction and purpose. Not everyone has one — that\'s normal.',
-    findIt: 'A vertical line running up the center of your palm toward your middle finger.',
-    highlightLine: 'fate',
-    options: FATE_LINE_OPTIONS,
-    optional: true,
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Types & Props                                                       */
-/* ------------------------------------------------------------------ */
-
-type Phase = 'camera' | 'analyzing' | 'lines';
 
 interface PalmReading {
   heartLine: string;
@@ -123,6 +29,15 @@ interface PalmReading {
   lifeLine: string;
   fateLine: string | null;
 }
+
+const AI_RESULTS: { line: string; type: string; meaning: string }[] = [
+  { line: 'Heart Line', type: 'Long & Curved', meaning: 'You love deeply and express emotions freely' },
+  { line: 'Head Line', type: 'Long & Straight', meaning: 'Analytical thinker with clear focus' },
+  { line: 'Life Line', type: 'Deep & Curved', meaning: 'Strong vitality and adventurous spirit' },
+  { line: 'Fate Line', type: 'Clear', meaning: 'Strong sense of purpose and direction' },
+];
+
+type Phase = 'camera' | 'analyzing' | 'results';
 
 interface PalmScanScreenProps {
   onContinue: (palmReading: PalmReading | null) => void;
@@ -138,34 +53,32 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
   const cameraRef = useRef<CameraView>(null);
 
   const [phase, setPhase] = useState<Phase>('camera');
-  const [stepIndex, setStepIndex] = useState(0);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [selections, setSelections] = useState({
-    heart: null as string | null,
-    head: null as string | null,
-    life: null as string | null,
-    fate: null as string | null,
-  });
 
-  // Auto-capture readiness state
+  // Hold-to-capture state
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const ringPulse = useRef(new Animated.Value(1)).current;
-  const analyzeProgress = useRef(new Animated.Value(0)).current;
 
-  // Pulsing ring animation for camera overlay
+  // Analyze animation
+  const analyzeProgress = useRef(new Animated.Value(0)).current;
+  const [analyzeStep, setAnalyzeStep] = useState(0);
+
+  // Results animations
+  const resultsFade = useRef(new Animated.Value(0)).current;
+
+  // Pulsing ring
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(ringPulse, { toValue: 1.06, duration: 1500, useNativeDriver: true }),
+        Animated.timing(ringPulse, { toValue: 1.04, duration: 1500, useNativeDriver: true }),
         Animated.timing(ringPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ]),
     ).start();
   }, [ringPulse]);
 
-  // Start hold-to-capture countdown
   const startHold = useCallback(() => {
     if (isHolding) return;
     setIsHolding(true);
@@ -185,7 +98,6 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
       if (elapsed >= 2500) {
         clearInterval(holdTimerRef.current!);
         holdTimerRef.current = null;
-        // Auto-capture
         capturePhoto();
       }
     }, 100);
@@ -212,75 +124,60 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
     }
   };
 
-  // Simulate AI analysis with progress
+  // Simulate AI analysis — steps through each line detection
   const runAnalysis = () => {
     analyzeProgress.setValue(0);
+    setAnalyzeStep(0);
+
+    // Step through line detections
+    const stepTimers = [800, 1600, 2400, 3200];
+    stepTimers.forEach((ms, i) => {
+      setTimeout(() => {
+        setAnalyzeStep(i + 1);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }, ms);
+    });
+
     Animated.timing(analyzeProgress, {
       toValue: 1,
-      duration: 3000,
+      duration: 3800,
       useNativeDriver: false,
     }).start(() => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('lines');
+      setPhase('results');
+      Animated.timing(resultsFade, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start();
     });
   };
 
-  const currentStep = STEPS[stepIndex]!;
-  const stepKey = currentStep.key as keyof typeof selections;
-  const selected = selections[stepKey];
-
-  const handleSelect = (value: string) => {
-    setSelections((prev) => ({ ...prev, [stepKey]: value }));
+  const handleFinish = () => {
+    onContinue({
+      heartLine: 'long_curved',
+      headLine: 'long_straight',
+      lifeLine: 'long_deep',
+      fateLine: 'deep_clear',
+    });
   };
-
-  const handleNext = () => {
-    if (stepIndex < STEPS.length - 1) {
-      setStepIndex(stepIndex + 1);
-    } else {
-      onContinue({
-        heartLine: selections.heart!,
-        headLine: selections.head!,
-        lifeLine: selections.life!,
-        fateLine: selections.fate,
-      });
-    }
-  };
-
-  const handleBack = () => {
-    if (phase === 'lines' && stepIndex > 0) {
-      setStepIndex(stepIndex - 1);
-    } else if (phase === 'lines' && stepIndex === 0) {
-      // Retake
-      setPhase('camera');
-      setPhotoUri(null);
-      setHoldProgress(0);
-      setIsHolding(false);
-    } else {
-      onBack();
-    }
-  };
-
-  const handleSkipLine = () => {
-    setSelections((prev) => ({ ...prev, [stepKey]: null }));
-    handleNext();
-  };
-
-  const handleSkipAll = () => onContinue(null);
 
   const handleRetake = () => {
     setPhase('camera');
     setPhotoUri(null);
     setHoldProgress(0);
     setIsHolding(false);
-    setStepIndex(0);
-    setSelections({ heart: null, head: null, life: null, fate: null });
+    setAnalyzeStep(0);
+    resultsFade.setValue(0);
   };
 
-  /* ---- Permission gates ---- */
+  const handleSkipAll = () => onContinue(null);
+
+  /* ---- Permission states ---- */
   if (!permission) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
+        <View style={[styles.content, styles.centered]}>
           <ActivityIndicator color={colors.gold} size="large" />
           <Text style={styles.loadingText}>Checking camera access...</Text>
         </View>
@@ -330,7 +227,6 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
             <Text style={styles.backBtnText}>{'<'} Back</Text>
           </TouchableOpacity>
 
-          {/* Header */}
           <View style={styles.cameraHeader}>
             <View style={styles.aiBadge}>
               <View style={styles.aiBadgeDot} />
@@ -338,19 +234,18 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
             </View>
             <Text style={styles.cameraTitle}>Position Your Palm</Text>
             <Text style={styles.cameraSubtitle}>
-              Place your open palm inside the guide. Hold steady — AI will capture when ready.
+              Open your hand, palm facing the camera. Hold steady and AI will capture automatically.
             </Text>
           </View>
 
-          {/* Camera with overlay */}
           <View style={styles.cameraContainer}>
             <Animated.View style={[styles.cameraRing, { transform: [{ scale: ringPulse }] }]}>
               <View style={styles.cameraView}>
                 <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
 
-                {/* Hand silhouette overlay */}
+                {/* Realistic hand silhouette overlay */}
                 <View style={styles.handOverlay}>
-                  <PalmGuideSvg size={CAMERA_SIZE * 0.65} isActive={isHolding} progress={holdProgress} />
+                  <HandGuideSvg size={CAMERA_SIZE * 0.7} isActive={isHolding} progress={holdProgress} />
                 </View>
 
                 {/* Corner guides */}
@@ -361,7 +256,6 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
               </View>
             </Animated.View>
 
-            {/* Hold progress bar */}
             {isHolding && (
               <View style={styles.holdBarWrap}>
                 <Animated.View style={[styles.holdBar, { width: progressWidth }]} />
@@ -369,18 +263,16 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
             )}
           </View>
 
-          {/* Status text */}
           <Text style={styles.statusText}>
             {isHolding
-              ? holdProgress < 0.5
+              ? holdProgress < 0.4
                 ? 'Detecting palm... hold steady'
-                : holdProgress < 0.9
-                  ? 'Almost there... keep holding'
+                : holdProgress < 0.8
+                  ? 'Aligning... keep holding'
                   : 'Capturing...'
-              : 'Tap & hold the button when your palm is aligned'}
+              : 'Tap & hold when your palm is aligned'}
           </Text>
 
-          {/* Capture button */}
           <View style={styles.buttonsBottom}>
             <TouchableOpacity
               style={[styles.captureBtn, isHolding && styles.captureBtnActive]}
@@ -389,11 +281,9 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
               activeOpacity={0.9}
             >
               <View style={[styles.captureBtnInner, isHolding && styles.captureBtnInnerActive]}>
-                {isHolding ? (
-                  <Text style={styles.captureBtnText}>{Math.round(holdProgress * 100)}%</Text>
-                ) : (
-                  <Text style={styles.captureBtnText}>Hold to Scan</Text>
-                )}
+                <Text style={styles.captureBtnText}>
+                  {isHolding ? `${Math.round(holdProgress * 100)}%` : 'Hold to Scan'}
+                </Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.skipBtn} onPress={handleSkipAll}>
@@ -412,37 +302,36 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
       outputRange: ['0%', '100%'],
     });
 
+    const lineNames = ['Heart Line', 'Head Line', 'Life Line', 'Fate Line'];
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, styles.centered]}>
-          {/* Captured palm thumbnail */}
           {photoUri && (
             <View style={styles.analyzePhotoWrap}>
               <Image source={{ uri: photoUri }} style={styles.analyzePhoto} />
-              <View style={styles.analyzeScanLine}>
-                <Animated.View
-                  style={[
-                    styles.scanLineBar,
-                    {
-                      width: analyzeWidth,
-                    },
-                  ]}
-                />
-              </View>
             </View>
           )}
 
           <View style={styles.aiBadge}>
-            <View style={[styles.aiBadgeDot, styles.aiBadgeDotPulse]} />
+            <View style={styles.aiBadgeDot} />
             <Text style={styles.aiBadgeText}>AI Analyzing</Text>
           </View>
 
           <Text style={styles.analyzeTitle}>Reading Your Palm</Text>
-          <Text style={styles.analyzeSubtitle}>
-            Detecting heart line, head line, life line, and fate line...
-          </Text>
 
-          {/* Progress bar */}
+          {/* Line detection steps */}
+          <View style={styles.analyzeSteps}>
+            {lineNames.map((name, i) => (
+              <View key={name} style={styles.analyzeStepRow}>
+                <View style={[styles.analyzeStepDot, analyzeStep > i && styles.analyzeStepDotDone]} />
+                <Text style={[styles.analyzeStepText, analyzeStep > i && styles.analyzeStepTextDone]}>
+                  {analyzeStep > i ? `${name} detected` : analyzeStep === i ? `Scanning ${name.toLowerCase()}...` : name}
+                </Text>
+              </View>
+            ))}
+          </View>
+
           <View style={styles.analyzeBarWrap}>
             <Animated.View style={[styles.analyzeBar, { width: analyzeWidth }]} />
           </View>
@@ -451,98 +340,51 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
     );
   }
 
-  /* ---- Line review phase ---- */
+  /* ---- Results phase — AI shows what it found, no manual input ---- */
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-          <Text style={styles.backBtnText}>{'<'} Back</Text>
-        </TouchableOpacity>
-
-        {/* Progress bar */}
-        <View style={styles.progressRow}>
-          {STEPS.map((_, i) => (
-            <View key={i} style={[styles.progressDot, i <= stepIndex && styles.progressDotActive]} />
-          ))}
-        </View>
-
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Side-by-side: captured photo + reference diagram */}
-          <View style={styles.referenceRow}>
+        <Animated.View style={[styles.resultsFlex, { opacity: resultsFade }]}>
+          {/* Header with photo */}
+          <View style={styles.resultsHeader}>
             {photoUri && (
-              <View style={styles.refCard}>
-                <Image source={{ uri: photoUri }} style={styles.refPhoto} />
-                <Text style={styles.refLabel}>Your Palm</Text>
-              </View>
+              <Image source={{ uri: photoUri }} style={styles.resultsPhoto} />
             )}
-            <View style={styles.refCard}>
-              <View style={styles.refDiagram}>
-                <PalmLineSvg highlight={currentStep.highlightLine} size={100} />
+            <View style={styles.resultsHeaderText}>
+              <View style={styles.aiBadge}>
+                <View style={styles.aiBadgeDot} />
+                <Text style={styles.aiBadgeText}>Reading Complete</Text>
               </View>
-              <Text style={styles.refLabel}>AI Guide</Text>
+              <Text style={styles.resultsTitle}>Your Palm Reading</Text>
             </View>
           </View>
 
-          {/* AI guidance card */}
-          <View style={styles.aiCard}>
-            <View style={styles.aiCardHeader}>
-              <View style={styles.aiBadgeDot} />
-              <Text style={styles.aiCardHeaderText}>AI Detected — {currentStep.title}</Text>
-            </View>
-            <Text style={styles.aiCardTip}>{currentStep.aiTip}</Text>
-            <View style={styles.findItBox}>
-              <Text style={styles.findItLabel}>Where to look</Text>
-              <Text style={styles.findItText}>{currentStep.findIt}</Text>
-            </View>
-          </View>
-
-          {/* Selection prompt */}
-          <Text style={styles.selectPrompt}>Confirm what yours looks like:</Text>
-
-          {/* Options */}
-          <View style={styles.optionsGrid}>
-            {currentStep.options.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[styles.optionCard, selected === opt.value && styles.optionCardSelected]}
-                onPress={() => handleSelect(opt.value)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.optionLabel, selected === opt.value && styles.optionLabelSelected]}>
-                  {opt.label}
-                </Text>
-                <Text style={styles.optionDesc}>{opt.description}</Text>
-              </TouchableOpacity>
+          {/* Detected lines */}
+          <View style={styles.resultsCards}>
+            {AI_RESULTS.map((result, i) => (
+              <View key={result.line} style={styles.resultCard}>
+                <View style={styles.resultCardTop}>
+                  <View style={styles.resultDot} />
+                  <Text style={styles.resultLineName}>{result.line}</Text>
+                  <Text style={styles.resultType}>{result.type}</Text>
+                </View>
+                <Text style={styles.resultMeaning}>{result.meaning}</Text>
+              </View>
             ))}
           </View>
-        </ScrollView>
 
-        {/* Bottom buttons */}
+          <Text style={styles.resultsNote}>
+            These readings will be used to enhance your compatibility matching.
+          </Text>
+        </Animated.View>
+
         <View style={styles.buttonsBottom}>
-          <TouchableOpacity
-            style={[styles.primaryBtn, !selected && !currentStep.optional && styles.primaryBtnDisabled]}
-            onPress={handleNext}
-            disabled={!selected && !currentStep.optional}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryBtnText}>
-              {stepIndex === STEPS.length - 1 ? 'Complete Reading' : 'Next Line'}
-            </Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={handleFinish} activeOpacity={0.8}>
+            <Text style={styles.primaryBtnText}>Continue</Text>
           </TouchableOpacity>
-          <View style={styles.bottomRow}>
-            {currentStep.optional && (
-              <TouchableOpacity onPress={handleSkipLine}>
-                <Text style={styles.skipLineBtnText}>I don't have this line</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={handleRetake}>
-              <Text style={styles.retakeText}>Retake photo</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={handleRetake}>
+            <Text style={styles.retakeText}>Retake photo</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -550,128 +392,104 @@ export default function PalmScanScreen({ onContinue, onBack }: PalmScanScreenPro
 }
 
 /* ------------------------------------------------------------------ */
-/*  Palm guide SVG — shown over camera as a hand silhouette             */
+/*  Realistic hand guide SVG for camera overlay                         */
 /* ------------------------------------------------------------------ */
 
-function PalmGuideSvg({ size, isActive, progress }: { size: number; isActive: boolean; progress: number }) {
+function HandGuideSvg({ size, isActive, progress }: { size: number; isActive: boolean; progress: number }) {
   const outlineColor = isActive
-    ? `rgba(212,165,74,${0.3 + progress * 0.6})`
-    : 'rgba(232,221,208,0.25)';
+    ? `rgba(212,165,74,${0.3 + progress * 0.5})`
+    : 'rgba(232,221,208,0.3)';
+
+  // More realistic open hand — wider palm, natural finger spacing & proportions
+  const handPath = `
+    M 248 580
+    C 220 575, 175 555, 150 520
+    C 130 492, 120 455, 118 420
+    C 116 395, 112 375, 100 365
+    C 85 352, 68 345, 58 330
+    C 45 310, 48 288, 62 278
+    C 76 268, 92 275, 105 290
+    L 118 310
+
+    L 118 195
+    C 118 168, 122 148, 132 138
+    C 142 128, 154 130, 162 140
+    C 170 152, 172 170, 172 195
+    L 172 290
+
+    L 185 290
+    L 185 105
+    C 185 72, 192 48, 206 38
+    C 218 28, 232 30, 242 42
+    C 250 54, 254 72, 254 105
+    L 254 280
+
+    L 270 280
+    L 270 70
+    C 270 38, 278 15, 292 6
+    C 306 -3, 322 0, 332 12
+    C 342 24, 346 45, 346 70
+    L 346 280
+
+    L 362 280
+    L 362 115
+    C 362 85, 368 62, 380 52
+    C 392 42, 406 45, 414 56
+    C 422 67, 426 85, 426 115
+    L 426 345
+
+    C 428 365, 435 380, 445 388
+    C 455 396, 462 390, 466 375
+    L 475 328
+    C 480 308, 492 298, 506 302
+    C 520 306, 524 322, 518 342
+    L 490 425
+    C 472 470, 450 505, 420 530
+    C 390 555, 358 570, 330 578
+    C 310 582, 275 583, 248 580
+    Z
+  `;
 
   return (
-    <Svg width={size} height={size * 1.22} viewBox="0 0 512 625" fill="none">
+    <Svg width={size} height={size * 1.15} viewBox="0 0 580 670" fill="none">
       <Path
-        d={`
-          M 200 590
-          C 170 580, 130 560, 115 530
-          C 100 500, 95 460, 95 420
-          L 75 420
-          C 55 420, 40 410, 30 395
-          C 18 375, 20 355, 35 340
-          C 45 330, 60 330, 75 335
-          L 95 342
-          L 95 200
-          C 95 180, 100 162, 112 152
-          C 124 142, 138 142, 148 152
-          C 158 162, 162 180, 162 200
-          L 162 300
-          L 170 300
-          L 170 120
-          C 170 95, 176 75, 190 65
-          C 204 55, 220 55, 232 65
-          C 244 75, 248 95, 248 120
-          L 248 300
-          L 256 300
-          L 256 80
-          C 256 55, 262 35, 276 25
-          C 290 15, 306 15, 318 25
-          C 330 35, 335 55, 335 80
-          L 335 300
-          L 343 300
-          L 343 135
-          C 343 112, 348 94, 360 84
-          C 372 74, 386 74, 398 84
-          C 410 94, 415 112, 415 135
-          L 415 360
-          C 415 380, 418 395, 425 405
-          C 432 415, 438 410, 440 395
-          L 448 340
-          C 452 320, 462 308, 478 310
-          C 494 312, 500 328, 496 348
-          L 465 440
-          C 445 490, 420 520, 390 545
-          C 360 570, 330 585, 300 590
-          Z
-        `}
+        d={handPath}
         stroke={outlineColor}
-        strokeWidth={isActive ? 3 : 2}
+        strokeWidth={isActive ? 2.5 : 1.8}
         strokeLinejoin="round"
         strokeLinecap="round"
-        strokeDasharray={isActive ? '0' : '12 6'}
-        fill="none"
+        strokeDasharray={isActive ? '0' : '10 6'}
+        fill={isActive ? 'rgba(212,165,74,0.03)' : 'none'}
       />
 
-      {/* Show line hints when actively scanning */}
+      {/* Show palm line hints during active scan */}
       {isActive && progress > 0.3 && (
         <>
-          <Path d="M 130 370 C 170 345, 250 335, 340 355" stroke="rgba(212,165,74,0.3)" strokeWidth={1.5} strokeLinecap="round" fill="none" />
-          <Path d="M 125 410 C 180 400, 260 395, 370 385" stroke="rgba(212,165,74,0.2)" strokeWidth={1.5} strokeLinecap="round" fill="none" />
-          <Path d="M 200 320 C 185 380, 160 440, 140 500" stroke="rgba(212,165,74,0.2)" strokeWidth={1.5} strokeLinecap="round" fill="none" />
+          {/* Heart line */}
+          <Path
+            d="M 140 385 C 200 365, 300 355, 400 370"
+            stroke={`rgba(212,165,74,${0.15 + progress * 0.2})`}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Head line */}
+          <Path
+            d="M 145 420 C 220 410, 320 405, 410 400"
+            stroke={`rgba(212,165,74,${0.1 + progress * 0.15})`}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Life line */}
+          <Path
+            d="M 215 335 C 195 390, 175 450, 155 510"
+            stroke={`rgba(212,165,74,${0.1 + progress * 0.15})`}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            fill="none"
+          />
         </>
-      )}
-    </Svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Palm line reference SVG — shown during line review                  */
-/* ------------------------------------------------------------------ */
-
-function PalmLineSvg({ highlight, size }: { highlight: 'heart' | 'head' | 'life' | 'fate'; size: number }) {
-  const lineColor = (line: string) => (highlight === line ? 'rgba(212,165,74,0.9)' : 'rgba(212,165,74,0.1)');
-  const strokeW = (line: string) => (highlight === line ? 3 : 1.5);
-
-  return (
-    <Svg width={size} height={size * 1.22} viewBox="0 0 512 625" fill="none">
-      <Path
-        d={`
-          M 200 590 C 170 580, 130 560, 115 530 C 100 500, 95 460, 95 420
-          L 75 420 C 55 420, 40 410, 30 395 C 18 375, 20 355, 35 340
-          C 45 330, 60 330, 75 335 L 95 342 L 95 200
-          C 95 180, 100 162, 112 152 C 124 142, 138 142, 148 152
-          C 158 162, 162 180, 162 200 L 162 300 L 170 300
-          L 170 120 C 170 95, 176 75, 190 65 C 204 55, 220 55, 232 65
-          C 244 75, 248 95, 248 120 L 248 300 L 256 300
-          L 256 80 C 256 55, 262 35, 276 25 C 290 15, 306 15, 318 25
-          C 330 35, 335 55, 335 80 L 335 300 L 343 300
-          L 343 135 C 343 112, 348 94, 360 84 C 372 74, 386 74, 398 84
-          C 410 94, 415 112, 415 135 L 415 360
-          C 415 380, 418 395, 425 405 C 432 415, 438 410, 440 395
-          L 448 340 C 452 320, 462 308, 478 310 C 494 312, 500 328, 496 348
-          L 465 440 C 445 490, 420 520, 390 545
-          C 360 570, 330 585, 300 590 Z
-        `}
-        stroke="rgba(232,221,208,0.15)"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        fill="rgba(232,221,208,0.02)"
-      />
-      <Path d="M 130 370 C 170 345, 250 335, 340 355" stroke={lineColor('heart')} strokeWidth={strokeW('heart')} strokeLinecap="round" fill="none" />
-      <Path d="M 125 410 C 180 400, 260 395, 370 385" stroke={lineColor('head')} strokeWidth={strokeW('head')} strokeLinecap="round" fill="none" />
-      <Path d="M 200 320 C 185 380, 160 440, 140 500" stroke={lineColor('life')} strokeWidth={strokeW('life')} strokeLinecap="round" fill="none" />
-      <Path d="M 260 500 C 258 460, 255 420, 250 370" stroke={lineColor('fate')} strokeWidth={strokeW('fate')} strokeLinecap="round" strokeDasharray={highlight === 'fate' ? '0' : '6 4'} fill="none" />
-      {highlight && (
-        <SvgText
-          x={highlight === 'life' ? 100 : highlight === 'fate' ? 310 : 240}
-          y={highlight === 'heart' ? 322 : highlight === 'head' ? 430 : highlight === 'life' ? 425 : 465}
-          fill="rgba(212,165,74,0.9)"
-          fontSize="20"
-          fontWeight="bold"
-          textAnchor="middle"
-        >
-          {highlight === 'heart' ? 'Heart' : highlight === 'head' ? 'Head' : highlight === 'life' ? 'Life' : 'Fate'}
-        </SvgText>
       )}
     </Svg>
   );
@@ -713,7 +531,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  /* ---- Permission ---- */
+  /* ---- Badge ---- */
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -731,15 +549,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.gold,
   },
-  aiBadgeDotPulse: {
-    opacity: 0.7,
-  },
   aiBadgeText: {
     fontFamily: fontFamily.bodySemibold,
     fontSize: 13,
     color: colors.gold,
     letterSpacing: 0.3,
   },
+
+  /* ---- Permission ---- */
   permTitle: {
     fontFamily: fontFamily.displayBold,
     fontSize: 26,
@@ -864,8 +681,8 @@ const styles = StyleSheet.create({
 
   /* ---- Analyzing phase ---- */
   analyzePhotoWrap: {
-    width: 180,
-    height: 220,
+    width: 160,
+    height: 200,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 2,
@@ -876,31 +693,41 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  analyzeScanLine: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: 'rgba(212,165,74,0.1)',
-  },
-  scanLineBar: {
-    height: '100%',
-    backgroundColor: colors.gold,
-  },
   analyzeTitle: {
     fontFamily: fontFamily.displayBold,
     fontSize: 24,
     color: '#faf5eb',
     letterSpacing: -0.5,
   },
-  analyzeSubtitle: {
+  analyzeSteps: {
+    gap: 10,
+    width: '80%',
+  },
+  analyzeStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  analyzeStepDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: 'rgba(232,221,208,0.2)',
+    backgroundColor: 'transparent',
+  },
+  analyzeStepDotDone: {
+    borderColor: colors.gold,
+    backgroundColor: colors.gold,
+  },
+  analyzeStepText: {
     fontFamily: fontFamily.body,
     fontSize: 14,
-    color: 'rgba(232,221,208,0.5)',
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 24,
+    color: 'rgba(232,221,208,0.35)',
+  },
+  analyzeStepTextDone: {
+    fontFamily: fontFamily.bodySemibold,
+    color: 'rgba(232,221,208,0.7)',
   },
   analyzeBarWrap: {
     width: SCREEN_WIDTH - 100,
@@ -916,140 +743,81 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 
-  /* ---- Line review phase ---- */
-  progressRow: {
+  /* ---- Results phase ---- */
+  resultsFlex: {
+    flex: 1,
+  },
+  resultsHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  resultsPhoto: {
+    width: 80,
+    height: 100,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212,165,74,0.2)',
+  },
+  resultsHeaderText: {
+    flex: 1,
     gap: 8,
-    marginBottom: 12,
   },
-  progressDot: {
-    flex: 1,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: 'rgba(232,221,208,0.12)',
+  resultsTitle: {
+    fontFamily: fontFamily.displayBold,
+    fontSize: 24,
+    color: '#faf5eb',
+    letterSpacing: -0.5,
   },
-  progressDotActive: {
-    backgroundColor: colors.gold,
+  resultsCards: {
+    gap: 10,
+    marginBottom: 16,
   },
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 16,
-  },
-  referenceRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 14,
-    justifyContent: 'center',
-  },
-  refCard: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  refPhoto: {
-    width: 110,
-    height: 140,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(232,221,208,0.1)',
-  },
-  refDiagram: {
-    width: 110,
-    height: 140,
-    borderRadius: 14,
-    backgroundColor: 'rgba(16,52,86,0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(232,221,208,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refLabel: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 11,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  aiCard: {
+  resultCard: {
     backgroundColor: 'rgba(212,165,74,0.06)',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(212,165,74,0.15)',
-    marginBottom: 14,
+    borderColor: 'rgba(212,165,74,0.12)',
   },
-  aiCardHeader: {
+  resultCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 4,
   },
-  aiCardHeaderText: {
+  resultDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.gold,
+  },
+  resultLineName: {
     fontFamily: fontFamily.bodySemibold,
-    fontSize: 14,
-    color: colors.gold,
+    fontSize: 15,
+    color: colors.goldLight,
   },
-  aiCardTip: {
+  resultType: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    color: colors.gold,
+    marginLeft: 'auto',
+  },
+  resultMeaning: {
     fontFamily: fontFamily.body,
     fontSize: 13,
     color: 'rgba(232,221,208,0.55)',
     lineHeight: 19,
-    marginBottom: 10,
+    marginLeft: 16,
   },
-  findItBox: {
-    backgroundColor: 'rgba(232,221,208,0.04)',
-    borderRadius: 10,
-    padding: 10,
-  },
-  findItLabel: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 10,
-    color: colors.gold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 3,
-  },
-  findItText: {
+  resultsNote: {
     fontFamily: fontFamily.body,
     fontSize: 12,
-    color: 'rgba(232,221,208,0.65)',
-    lineHeight: 17,
-  },
-  selectPrompt: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 14,
-    color: 'rgba(232,221,208,0.5)',
-    marginBottom: 8,
-  },
-  optionsGrid: {
-    gap: 8,
-  },
-  optionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(232,221,208,0.06)',
-  },
-  optionCardSelected: {
-    borderColor: colors.gold,
-    backgroundColor: 'rgba(212,165,74,0.08)',
-  },
-  optionLabel: {
-    fontFamily: fontFamily.bodySemibold,
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  optionLabelSelected: {
-    color: colors.gold,
-  },
-  optionDesc: {
-    fontFamily: fontFamily.body,
-    fontSize: 12,
-    color: colors.textMuted,
-    lineHeight: 17,
+    color: 'rgba(232,221,208,0.3)',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 
   /* ---- Shared buttons ---- */
@@ -1057,21 +825,19 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 32,
     gap: 10,
+    alignItems: 'center',
   },
   primaryBtn: {
     backgroundColor: colors.gold,
     borderRadius: 999,
     paddingVertical: 17,
     alignItems: 'center',
+    alignSelf: 'stretch',
     shadowColor: colors.gold,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
-  },
-  primaryBtnDisabled: {
-    backgroundColor: 'rgba(212,165,74,0.3)',
-    shadowOpacity: 0,
   },
   primaryBtnText: {
     fontFamily: fontFamily.bodySemibold,
@@ -1088,19 +854,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textDecorationLine: 'underline',
   },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  skipLineBtnText: {
-    fontFamily: fontFamily.body,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
   retakeText: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.gold,
     textDecorationLine: 'underline',
   },
