@@ -538,9 +538,10 @@ function ShopPage() {
 
     try {
       // Create Stripe Checkout Session — redirects to Stripe payment page
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       const origin = window.location.origin;
-      const res = await fetch(`${apiUrl}/api/v1/payments/create-checkout-session`, {
+
+      // Use Next.js API route as proxy to avoid CORS issues
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -550,13 +551,16 @@ function ShopPage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to create checkout session');
+      const data = await res.json();
 
-      const { url } = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
       // Redirect to Stripe's hosted payment page
-      window.location.href = url;
+      window.location.href = data.url;
     } catch (err: any) {
-      setToast('Payment error — please try again');
+      setToast(err?.message || 'Payment error — please try again');
       setBuyingPkg(null);
     }
   }
