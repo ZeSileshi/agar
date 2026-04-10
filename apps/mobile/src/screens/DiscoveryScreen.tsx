@@ -127,13 +127,41 @@ export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
   const [dailyCap, setDailyCap] = useState(DAILY_LIMIT);
   const { balance: points, spendPoints } = usePointsStore();
   const [matchModal, setMatchModal] = useState<MatchCandidate | null>(null);
+  const [matchBanner, setMatchBanner] = useState<MatchCandidate | null>(null);
   const [mode, setMode] = useState<'self' | 'referral'>('self');
+
+  // Track who user has liked — matches come from previous likes
+  const likedRef = useRef<MatchCandidate[]>([]);
+  const bannerAnim = useRef(new Animated.Value(-80)).current;
 
   const position = useRef(new Animated.ValueXY()).current;
 
   const isLimitReached = dailyViewed >= dailyCap;
   const currentCandidate = candidates[currentIndex];
   const remaining = dailyCap - dailyViewed;
+
+  // Show match banner with slide-in animation
+  const showBanner = (candidate: MatchCandidate) => {
+    setMatchBanner(candidate);
+    Animated.sequence([
+      Animated.timing(bannerAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+      Animated.delay(4000),
+      Animated.timing(bannerAnim, { toValue: -80, duration: 300, useNativeDriver: true }),
+    ]).start(() => setMatchBanner(null));
+  };
+
+  // Simulate a previous like matching back (delayed mutual match)
+  const checkForDelayedMatch = () => {
+    if (likedRef.current.length >= 2 && Math.random() < 0.4) {
+      // Pick a random previous like (not the most recent one)
+      const pool = likedRef.current.slice(0, -1);
+      const matched = pool[Math.floor(Math.random() * pool.length)];
+      // Remove from liked pool so they don't match again
+      likedRef.current = likedRef.current.filter((c) => c.userId !== matched.userId);
+      // Show banner notification after a short delay
+      setTimeout(() => showBanner(matched), 1200);
+    }
+  };
 
   const panResponder = useRef(
     PanResponder.create({
@@ -161,7 +189,6 @@ export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
   ).current;
 
   const swipeOut = (direction: 'left' | 'right' | 'up') => {
-    // Capture the candidate NOW before the animation completes
     const candidate = candidates[currentIndex];
     const action = direction === 'left' ? 'pass' : direction === 'right' ? 'like' : 'super_like';
 
@@ -173,9 +200,11 @@ export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
       duration: 300,
       useNativeDriver: false,
     }).start(() => {
-      // Simulate match on like/super_like with 30% chance
-      if ((action === 'like' || action === 'super_like') && candidate && Math.random() < 0.3) {
-        setMatchModal(candidate);
+      // Record the like
+      if ((action === 'like' || action === 'super_like') && candidate) {
+        likedRef.current = [...likedRef.current, candidate];
+        // Check if a PREVIOUS like has matched back
+        checkForDelayedMatch();
       }
 
       position.setValue({ x: 0, y: 0 });
@@ -260,6 +289,28 @@ export default function DiscoveryScreen({ onOpenChat }: DiscoveryScreenProps) {
   /* ---- Main discovery view ---- */
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      {/* Match notification banner — slides in from top */}
+      {matchBanner && (
+        <Animated.View style={[styles.matchBanner, { transform: [{ translateY: bannerAnim }] }]}>
+          <TouchableOpacity
+            style={styles.matchBannerInner}
+            activeOpacity={0.85}
+            onPress={() => {
+              const banner = matchBanner;
+              setMatchBanner(null);
+              bannerAnim.setValue(-80);
+              setMatchModal(banner);
+            }}
+          >
+            <View style={styles.matchBannerDot} />
+            <Text style={styles.matchBannerText}>
+              New match! <Text style={styles.matchBannerName}>{matchBanner.displayName}</Text> liked you back
+            </Text>
+            <Text style={styles.matchBannerAction}>View</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.modeToggle}>
@@ -449,6 +500,49 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  // Match banner
+  matchBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+  matchBannerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(212,165,74,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,165,74,0.3)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  matchBannerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.gold,
+  },
+  matchBannerText: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    color: 'rgba(232,221,208,0.8)',
+    flex: 1,
+  },
+  matchBannerName: {
+    fontFamily: fontFamily.bodySemibold,
+    color: colors.gold,
+  },
+  matchBannerAction: {
+    fontFamily: fontFamily.bodySemibold,
+    fontSize: 13,
+    color: colors.gold,
   },
 
   // Top bar
