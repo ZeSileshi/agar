@@ -1,15 +1,11 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { supabase } from '../lib/supabase';
 
 export type UserType = 'direct' | 'referrer';
 
-const STORAGE_KEY = 'agar_auth_session';
-
-interface SessionData {
-  accessToken: string;
-  userId: string;
-  onboardingComplete: boolean;
-}
+const ONBOARDING_KEY = 'agar_onboarding_complete';
+const BIOMETRIC_KEY = 'agar_biometric_enabled';
 
 interface AuthState {
   // Registration flow
@@ -17,54 +13,41 @@ interface AuthState {
   otp: string;
   userType: UserType | null;
 
-  // Auth tokens
-  accessToken: string | null;
+  // Auth
   userId: string | null;
   isAuthenticated: boolean;
   onboardingComplete: boolean;
+  biometricEnabled: boolean;
   isLoading: boolean;
   isHydrated: boolean;
 
-  // Profile data
+  // Profile
   language: 'en' | 'am' | 'es';
 
   // Actions
   setPhone: (phone: string) => void;
   setOtp: (otp: string) => void;
   setUserType: (userType: UserType) => void;
-  login: (accessToken: string, userId: string) => void;
+
+  // Supabase auth actions
+  sendOtp: (phone: string) => Promise<{ error: string | null }>;
+  verifyOtp: (phone: string, code: string) => Promise<{ error: string | null }>;
   completeOnboarding: () => void;
-  logout: () => void;
+  enableBiometric: () => void;
+  logout: () => Promise<void>;
+
   setLanguage: (lang: 'en' | 'am' | 'es') => void;
   hydrate: () => Promise<void>;
-}
-
-async function saveSession(data: SessionData) {
-  await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(data));
-}
-
-async function clearSession() {
-  await SecureStore.deleteItemAsync(STORAGE_KEY);
-}
-
-async function loadSession(): Promise<SessionData | null> {
-  const raw = await SecureStore.getItemAsync(STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as SessionData;
-  } catch {
-    return null;
-  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   phone: '',
   otp: '',
   userType: null,
-  accessToken: null,
   userId: null,
   isAuthenticated: false,
   onboardingComplete: false,
+  biometricEnabled: false,
   isLoading: false,
   isHydrated: false,
   language: 'en',
@@ -73,47 +56,80 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setOtp: (otp) => set({ otp }),
   setUserType: (userType) => set({ userType }),
 
-  login: (accessToken, userId) => {
-    set({
-      accessToken,
-      userId,
-      isAuthenticated: true,
-      isLoading: false,
-    });
-    saveSession({ accessToken, userId, onboardingComplete: get().onboardingComplete });
-  },
-
-  completeOnboarding: () => {
-    set({ onboardingComplete: true });
-    const { accessToken, userId } = get();
-    if (accessToken && userId) {
-      saveSession({ accessToken, userId, onboardingComplete: true });
+  sendOtp: async (phone) => {
+    set({ isLoading: true });
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    set({ isLoading: false });
+    if (error) {
+      return { error: error.message };
     }
+    return { error: null };
   },
 
-  logout: () => {
+  verifyOtp: async (phone, code) => {
+    set({ isLoading: true });
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token: code,
+      type: 'sms',
+    });
+    set({ isLoading: false });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    if (data.session) {
+      set({
+        userId: data.session.user.id,
+        isAuthenticated: true,
+      });
+    }
+
+    return { error: null };
+  },
+
+  completeOnboarding: async () => {
+    set({ onboardingComplete: true });
+    await SecureStore.setItemAsync(ONBOARDING_KEY, 'true');
+  },
+
+  enableBiometric: async () => {
+    set({ biometricEnabled: true });
+    await SecureStore.setItemAsync(BIOMETRIC_KEY, 'true');
+  },
+
+  logout: async () => {
+    await supabase.auth.signOut();
+    await SecureStore.deleteItemAsync(ONBOARDING_KEY);
+    await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
     set({
       phone: '',
       otp: '',
       userType: null,
-      accessToken: null,
       userId: null,
       isAuthenticated: false,
       onboardingComplete: false,
+      biometricEnabled: false,
     });
-    clearSession();
   },
 
   setLanguage: (language) => set({ language }),
 
   hydrate: async () => {
-    const session = await loadSession();
+    // Check Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // Check onboarding/biometric flags
+    const onboardingDone = await SecureStore.getItemAsync(ONBOARDING_KEY);
+    const biometricOn = await SecureStore.getItemAsync(BIOMETRIC_KEY);
+
     if (session) {
       set({
-        accessToken: session.accessToken,
-        userId: session.userId,
+        userId: session.user.id,
         isAuthenticated: true,
-        onboardingComplete: session.onboardingComplete,
+        onboardingComplete: onboardingDone === 'true',
+        biometricEnabled: biometricOn === 'true',
         isHydrated: true,
       });
     } else {

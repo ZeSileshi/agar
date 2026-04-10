@@ -22,7 +22,7 @@ interface OTPScreenProps {
 }
 
 export default function OTPScreen({ onVerified, onBack }: OTPScreenProps) {
-  const { phone, setOtp, login } = useAuthStore();
+  const { phone, setOtp } = useAuthStore();
   const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [resendTimer, setResendTimer] = useState(RESEND_INTERVAL);
@@ -43,17 +43,23 @@ export default function OTPScreen({ onVerified, onBack }: OTPScreenProps) {
       setIsVerifying(true);
       setOtp(fullCode);
 
-      // Mock verification - simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Verify OTP via Supabase
+      const { verifyOtp } = useAuthStore.getState();
+      const { error } = await verifyOtp(phone, fullCode);
 
-      // For demo: any 6-digit code is accepted
-      const mockToken = 'mock_access_token_' + Date.now();
-      const mockUserId = 'user_' + Date.now();
-      login(mockToken, mockUserId);
       setIsVerifying(false);
+
+      if (error) {
+        Alert.alert('Verification Failed', error);
+        setCode(Array(OTP_LENGTH).fill(''));
+        inputRefs.current[0]?.focus();
+        setFocusedIndex(0);
+        return;
+      }
+
       onVerified();
     },
-    [setOtp, login, onVerified]
+    [phone, setOtp, onVerified]
   );
 
   const handleDigitChange = (text: string, index: number) => {
@@ -112,9 +118,15 @@ export default function OTPScreen({ onVerified, onBack }: OTPScreenProps) {
     inputRefs.current[0]?.focus();
     setFocusedIndex(0);
 
-    // Mock resend
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    Alert.alert('Code Sent', 'A new verification code has been sent.');
+    // Resend OTP via Supabase
+    const { sendOtp } = useAuthStore.getState();
+    const { error } = await sendOtp(phone);
+
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      Alert.alert('Code Sent', 'A new verification code has been sent.');
+    }
   };
 
   const maskedPhone =

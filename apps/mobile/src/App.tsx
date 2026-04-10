@@ -19,6 +19,7 @@ import { useAuthStore } from './store/auth-store';
 import WelcomeScreen from './screens/WelcomeScreen';
 import PhoneEntryScreen from './screens/auth/PhoneEntryScreen';
 import OTPScreen from './screens/auth/OTPScreen';
+import LockScreen from './screens/auth/LockScreen';
 import UserTypeScreen from './screens/auth/UserTypeScreen';
 import BasicInfoScreen from './screens/onboarding/BasicInfoScreen';
 import PhotoUploadScreen from './screens/onboarding/PhotoUploadScreen';
@@ -28,13 +29,14 @@ import HomeScreen from './screens/HomeScreen';
 // Initialize i18n
 initI18n('en');
 
-// Keep splash visible while loading fonts + session
+// Keep splash visible while loading
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Screen =
   | 'welcome'
   | 'phone'
   | 'otp'
+  | 'lock'
   | 'userType'
   | 'basicInfo'
   | 'photoUpload'
@@ -45,8 +47,15 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
   const [appReady, setAppReady] = useState(false);
 
-  const { isAuthenticated, onboardingComplete, isHydrated, hydrate, completeOnboarding } =
-    useAuthStore();
+  const {
+    isAuthenticated,
+    onboardingComplete,
+    isHydrated,
+    hydrate,
+    completeOnboarding,
+    enableBiometric,
+    logout,
+  } = useAuthStore();
 
   const [fontsLoaded, fontError] = useFonts({
     Urbanist_400Regular,
@@ -57,26 +66,36 @@ export default function App() {
     NotoSansEthiopic: require('./assets/fonts/NotoSansEthiopic.ttf'),
   });
 
-  // Hydrate session from secure storage on mount
+  // Hydrate session on mount
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
-  // Once fonts + session are ready, decide initial screen
+  // Decide initial screen once ready
   useEffect(() => {
     if ((fontsLoaded || fontError) && isHydrated) {
-      // Returning user with completed onboarding → straight to discovery
       if (isAuthenticated && onboardingComplete) {
-        setScreen('home');
+        // Returning user — show lock screen for biometric/PIN
+        setScreen('lock');
+      } else if (isAuthenticated && !onboardingComplete) {
+        // Authenticated but hasn't finished onboarding
+        setScreen('userType');
       }
+      // else: not authenticated → stays on 'welcome'
+
       setAppReady(true);
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError, isHydrated, isAuthenticated, onboardingComplete]);
 
   if (!appReady) {
-    return null; // Splash screen is still visible
+    return null;
   }
+
+  const handleLogout = async () => {
+    await logout();
+    setScreen('welcome');
+  };
 
   const renderScreen = () => {
     switch (screen) {
@@ -91,6 +110,14 @@ export default function App() {
           <OTPScreen
             onVerified={() => setScreen('userType')}
             onBack={() => setScreen('phone')}
+          />
+        );
+
+      case 'lock':
+        return (
+          <LockScreen
+            onUnlocked={() => setScreen('home')}
+            onLogout={handleLogout}
           />
         );
 
@@ -118,6 +145,7 @@ export default function App() {
           <PalmScanScreen
             onContinue={(_reading) => {
               completeOnboarding();
+              enableBiometric();
               setScreen('home');
             }}
             onBack={() => setScreen('photoUpload')}

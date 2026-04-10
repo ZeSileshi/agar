@@ -55,9 +55,17 @@ export default function PhoneEntryScreen({ onContinue }: PhoneEntryScreenProps) 
     const fullPhone = `${countryCode.code}${cleaned}`;
     setPhone(fullPhone);
 
-    // Mock OTP send - simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    // Send real OTP via Supabase
+    const { sendOtp } = useAuthStore.getState();
+    const { error } = await sendOtp(fullPhone);
+
     setIsSubmitting(false);
+
+    if (error) {
+      Alert.alert('Error', error);
+      return;
+    }
+
     onContinue();
   };
 
