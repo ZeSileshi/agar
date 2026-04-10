@@ -120,7 +120,7 @@ export default function AppNav() {
         <Link href="/" className="mb-8 flex items-center gap-2 px-4">
           <img src="/logo.png" alt="Agar" className="h-10 w-10 logo-blend" />
           <span className="hidden font-display text-lg font-bold text-gold-100 lg:block">
-            Agar <span className="text-gold-400/60 text-xs ml-0.5">አጋር</span>
+            Agar
           </span>
         </Link>
 

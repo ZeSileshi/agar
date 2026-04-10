@@ -23,7 +23,7 @@ interface AuthState {
   isHydrated: boolean;
 
   // Profile
-  language: 'en' | 'am' | 'es';
+  language: 'en' | 'es';
 
   // Actions
   setPhone: (phone: string) => void;
@@ -36,7 +36,7 @@ interface AuthState {
   enableBiometric: () => void;
   logout: () => Promise<void>;
 
-  setLanguage: (lang: 'en' | 'am' | 'es') => void;
+  setLanguage: (lang: 'en' | 'es') => void;
   hydrate: () => Promise<void>;
 }
 

@@ -83,7 +83,6 @@ export default function LockScreen({ onUnlocked, onLogout }: LockScreenProps) {
             resizeMode="contain"
           />
           <Text style={styles.appName}>Agar</Text>
-          <Text style={styles.appNameAmharic}>አጋር</Text>
         </View>
 
         {/* Lock message */}
@@ -157,14 +156,6 @@ const styles = StyleSheet.create({
     color: colors.goldLight,
     letterSpacing: -0.5,
   },
-  appNameAmharic: {
-    fontFamily: fontFamily.body,
-    fontSize: 14,
-    color: colors.gold,
-    opacity: 0.5,
-    marginTop: 2,
-  },
-
   // Lock
   lockSection: {
     alignItems: 'center',

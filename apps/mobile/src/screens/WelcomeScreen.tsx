@@ -39,7 +39,6 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             <View style={styles.navLogo}>
               <Image source={require('../assets/icon.png')} style={styles.navLogoImage} resizeMode="contain" />
               <Text style={styles.navBrandName}>Agar</Text>
-              <Text style={styles.navAmharic}>አጋር</Text>
             </View>
           </View>
 
@@ -153,7 +152,7 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
               <Text key={link} style={styles.footerLink}>{link}</Text>
             ))}
           </View>
-          <Text style={styles.footerCopy}>© 2026 Agar (አጋር). All rights reserved.</Text>
+          <Text style={styles.footerCopy}>© 2026 Agar. All rights reserved.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -214,9 +213,6 @@ const styles = StyleSheet.create({
   navLogoImage: { width: 44, height: 44, borderRadius: 12 },
   navBrandName: {
     fontFamily: fontFamily.displayBold, fontSize: 21, color: colors.goldLight, letterSpacing: -0.5,
-  },
-  navAmharic: {
-    fontFamily: fontFamily.ethiopic, fontSize: 14, color: colors.gold, opacity: 0.6, marginLeft: 2,
   },
   heroSection: { flex: 1, justifyContent: 'center' },
   badge: {

@@ -2,7 +2,7 @@
   "name": "agar",
   "version": "0.1.0",
   "private": true,
-  "description": "Agar (አጋር) - AI-Powered Matchmaking Platform with Cultural Compatibility Intelligence",
+  "description": "Agar - AI-Powered Matchmaking Platform with Cultural Compatibility Intelligence",
   "scripts": {
     "dev": "turbo dev",
     "dev:api": "turbo dev --filter=@agar/api",

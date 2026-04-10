@@ -9,11 +9,10 @@ import Link from 'next/link';
 /* ------------------------------------------------------------------ */
 const LANGUAGES = [
   { code: 'en', label: 'EN' },
-  { code: 'am', label: 'አማ' },
   { code: 'es', label: 'ES' },
 ] as const;
 
-type Lang = 'en' | 'am' | 'es';
+type Lang = 'en' | 'es';
 
 const content = {
   en: {
@@ -81,7 +80,7 @@ const content = {
         {
           icon: 'globe',
           title: 'Cultural intelligence',
-          desc: 'Built for diverse traditions and values. Available in English, Amharic, and Spanish.',
+          desc: 'Built for diverse traditions and values. Available in English and Spanish.',
         },
         {
           icon: 'lock',
@@ -109,55 +108,57 @@ const content = {
     footer: {
       tagline: 'Where stars align and hearts connect.',
       links: ['About', 'Privacy', 'Terms', 'Support'],
-      copy: '\u00A9 2026 Agar (\u12A0\u130B\u122D). All rights reserved.',
+      copy: '\u00A9 2026 Agar. All rights reserved.',
     },
   },
-  am: {
-    nav: { signin: '\u1260\u12ED\u1295', register: '\u12ED\u1218\u12DD\u1308\u1261' },
+  es: {
+    nav: { signin: 'Iniciar', register: 'Registrarse' },
     hero: {
-      badge: '\u12AE\u12A8\u1265 \u1246\u1320\u122B \u12A8AI \u130B\u122D',
-      title: 'ኮስሞስ ያግዝዎት',
-      titleAccent: 'ሰውዎን ያግኙ።',
-      subtitle: '\u12A0\u130B\u122D \u1230\u120D\u1235\u1270 \u12E8\u12AE\u12A8\u1265 \u1246\u1320\u122B \u1235\u122D\u12D3\u1276\u127D\u1295\u1363 \u12E8\u1235\u1265\u12D5\u1293 \u1233\u12ED\u1295\u1235 \u12A5\u1293 \u1263\u1205\u120B\u12CA \u1265\u120D\u1205\u1290\u1275\u1295 \u1260\u121B\u1348\u1293\u1308\u122D \u1275\u12AD\u12AD\u1208\u129B \u130D\u1325\u121A\u12EB\u12CE\u127D\u1295 \u12EB\u130D\u1293\u120D\u1362',
-      cta: '\u130D\u1325\u121A\u12EB \u1305\u121D\u122D \u2014 \u1260\u1290\u133D\u1290\u1275',
-      ctaSecondary: '\u12A5\u1295\u12F0\u1275 \u12A5\u1295\u12F0\u121A\u1230\u122B',
+      badge: 'Astrolog\u00EDa + IA',
+      title: 'Deja que el cosmos encuentre',
+      titleAccent: 'a tu persona.',
+      subtitle: 'Agar combina tres sistemas astrol\u00F3gicos, ciencia de la personalidad e inteligencia cultural para encontrar coincidencias que realmente tienen sentido.',
+      cta: 'Comienza gratis',
+      ctaSecondary: 'C\u00F3mo funciona',
       appStore: 'App Store',
       googlePlay: 'Google Play',
     },
     social: {
       users: '50K+',
-      usersLabel: '\u1290\u1243 \u12A0\u1263\u120B\u1275',
+      usersLabel: 'miembros activos',
       matches: '12K+',
-      matchesLabel: '\u130D\u1325\u121A\u12EB\u12CE\u127D',
+      matchesLabel: 'parejas hechas',
       rating: '4.8',
-      ratingLabel: '\u12A0\u121B\u12AB\u12ED \u12F0\u1228\u1303',
+      ratingLabel: 'calificaci\u00F3n promedio',
     },
     how: {
-      label: 'አጋር እንደት ይሰራል',
-      title: 'ፍቅር ለማግኘት ሁለት መንገዶች',
+      label: 'C\u00F3mo funciona',
+      title: 'Dos caminos hacia el amor',
       paths: {
         match: {
-          heading: 'ግጥሚያዎን ያግኙ',
+          heading: 'Encuentra tu pareja',
           steps: [
-            { num: '01', title: 'መለያ ይፍጠሩ', desc: 'በስልክ ቁጥርዎ ይመዝገቡ እና በደቂቃዎች ውስጥ ፕሮፋይልዎን ይገንቡ።' },
-            { num: '02', title: 'እጅዎን ያስቃኑ', desc: 'በ AI የተጎለበተ ጥልቅ ተኳኋኝነት ግንዛቤዎችን ለማግኘት እጅዎን ያስቃኑ።' },
-            { num: '03', title: 'ዕለታዊ ግጥሚያዎችን ይመልከቱ', desc: 'በየቀኑ 10 የተመረጡ ግጥሚያዎችን ይመልከቱ። ይውደዱ፣ ስጦታ ይላኩ ወይም ይዝለሉ።' },
-            { num: '04', title: 'ውይይት ይጀምሩ', desc: 'የጋራ ውዳሴ የግል ቻት ይከፍታል ስለዚህ በእውነት መገናኘት ይችላሉ።' },
+            { num: '01', title: 'Crea tu cuenta', desc: 'Reg\u00EDstrate con tu n\u00FAmero de tel\u00E9fono y crea tu perfil en minutos.' },
+            { num: '02', title: 'Escanea tu palma', desc: 'Opcionalmente escanea tu palma para obtener informaci\u00F3n de compatibilidad m\u00E1s profunda con IA.' },
+            { num: '03', title: 'Explora coincidencias diarias', desc: 'Ve 10 coincidencias seleccionadas cada d\u00EDa. Da like, ama, regala o pasa.' },
+            { num: '04', title: 'Comienza a chatear', desc: 'Los likes mutuos desbloquean el chat privado para conectar de verdad.' },
           ],
         },
         refer: {
-          heading: 'ሰው ይጠቁሙ',
+          heading: 'Recomienda a alguien',
           steps: [
-            { num: '01', title: 'ጥሩ ግጥሚያ ያውቃሉ?', desc: 'ፍቅር የሚገባው ሰው ያውቃሉ? ወደ አጋር ይጠቁሙ።' },
-            { num: '02', title: 'ዝርዝራቸውን ያክሉ', desc: 'የጽሑፍ ዝርዝሮች ብቻ — ፎቶዎች አያስፈልጉም። ፈጣን እና ያክብሮታል።' },
-            { num: '03', title: 'ይገኛሉ', desc: 'ሪፈራልዎ ሌሎች ሪፈራሎች እንዲያገኙ እና እንዲገናኙ ይታያል።' },
+            { num: '01', title: '\u00BFConoces a alguien ideal?', desc: '\u00BFConoces a alguien que merece amor? Refi\u00E9relo a Agar.' },
+            { num: '02', title: 'Agrega sus datos', desc: 'Solo datos de texto \u2014 no se necesitan fotos. R\u00E1pido y respetuoso.' },
+            { num: '03', title: 'Son descubiertos', desc: 'Tu referido aparece para que otros referidos lo encuentren y conecten.' },
           ],
         },
       },
     },
     features: {
-      label: '\u1208\u121D\u1295 \u12A0\u130B\u122D?',
-      title: '\u120C\u120B \u12E8\u121B\u1295\u1248\u1323\u1320\u132D \u1218\u1270\u130D\u1260\u122A\u12EB \u12A0\u12ED\u12F0\u1208\u121D',
+      label: 'Por qu\u00E9 Agar',
+      title: 'No es otra app de deslizar',
+      items_MARKER_REMOVE: 'MARKER',
+      title_OLD: '\u120C\u120B \u12E8\u121B\u1295\u1248\u1323\u1320\u132D \u1218\u1270\u130D\u1260\u122A\u12EB \u12A0\u12ED\u12F0\u1208\u121D',
       items: [
         {
           icon: 'astrology',

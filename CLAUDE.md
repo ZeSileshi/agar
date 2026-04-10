@@ -1,7 +1,7 @@
-# Agar (አጋር) - Project Guide
+# Agar - Project Guide
 
 ## What is this?
-Agar is an AI-powered matchmaking platform combining modern dating with cultural compatibility intelligence (astrology, palmistry, behavioral AI). Trilingual: English, Amharic, Spanish.
+Agar is an AI-powered matchmaking platform combining modern dating with cultural compatibility intelligence (astrology, palmistry, behavioral AI). Bilingual: English, Spanish.
 
 ## Tech Stack
 - **Monorepo**: Turborepo with npm workspaces

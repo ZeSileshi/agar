@@ -84,7 +84,7 @@ function SignUpForm() {
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="Agar" width={40} height={40} className="logo-blend" />
             <span className="font-display text-lg font-bold tracking-tight text-gold-100">
-              Agar <span className="text-gold-400/60 font-normal text-xs ml-0.5">አጋር</span>
+              Agar
             </span>
           </Link>
         </div>

@@ -73,7 +73,7 @@ export default function DashboardPage() {
           <Link href="/" className="flex items-center gap-2.5 md:hidden">
             <Image src="/logo.png" alt="Agar" width={44} height={44} className="logo-blend" />
             <span className="font-display text-xl font-bold tracking-tight text-gold-100">
-              Agar <span className="text-gold-400/60 font-normal text-sm ml-0.5">አጋር</span>
+              Agar
             </span>
           </Link>
           <div className="hidden md:block" />

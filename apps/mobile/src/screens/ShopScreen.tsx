@@ -131,7 +131,7 @@ export default function ShopScreen() {
 
           const { error: initError } = await initPaymentSheet({
             paymentIntentClientSecret: clientSecret,
-            merchantDisplayName: 'Agar - አጋር',
+            merchantDisplayName: 'Agar',
             style: 'alwaysDark',
           });
 

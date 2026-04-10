@@ -10,7 +10,7 @@ interface LogoHeaderProps {
 
 /**
  * Consistent logo matching the web nav:
- *  [logo.png] Agar አጋር
+ *  [logo.png] Agar
  */
 export default function LogoHeader({ size = 'small', showText = true }: LogoHeaderProps) {
   const isLarge = size === 'large';
@@ -23,10 +23,7 @@ export default function LogoHeader({ size = 'small', showText = true }: LogoHead
         resizeMode="contain"
       />
       {showText && (
-        <>
-          <Text style={isLarge ? styles.brandNameLarge : styles.brandName}>Agar</Text>
-          <Text style={isLarge ? styles.amharicLarge : styles.amharic}>አጋር</Text>
-        </>
+        <Text style={isLarge ? styles.brandNameLarge : styles.brandName}>Agar</Text>
       )}
     </View>
   );
@@ -50,13 +47,6 @@ const styles = StyleSheet.create({
     color: colors.goldLight,
     letterSpacing: -0.5,
   },
-  amharic: {
-    fontFamily: fontFamily.ethiopic,
-    fontSize: 12,
-    color: colors.gold,
-    opacity: 0.6,
-    marginLeft: 2,
-  },
   // Large — for splash/welcome
   logoLarge: {
     width: 44,
@@ -68,12 +58,5 @@ const styles = StyleSheet.create({
     fontSize: 21,
     color: colors.goldLight,
     letterSpacing: -0.5,
-  },
-  amharicLarge: {
-    fontFamily: fontFamily.ethiopic,
-    fontSize: 14,
-    color: colors.gold,
-    opacity: 0.6,
-    marginLeft: 2,
   },
 });

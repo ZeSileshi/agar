@@ -1,5 +1,5 @@
 /**
- * Client-side astrology utilities for Agar (አጋር)
+ * Client-side astrology utilities for Agar
  * Western zodiac, Chinese zodiac, and simple compatibility scoring.
  */
 

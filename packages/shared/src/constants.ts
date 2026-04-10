@@ -1,6 +1,5 @@
 // App constants
 export const APP_NAME = 'Agar';
-export const APP_NAME_AMHARIC = 'አጋር';
 export const APP_VERSION = '0.1.0';
 
 // Matching

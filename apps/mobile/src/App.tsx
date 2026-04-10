@@ -64,7 +64,7 @@ export default function App() {
     Urbanist_600SemiBold,
     Urbanist_700Bold,
     Urbanist_800ExtraBold,
-    NotoSansEthiopic: require('./assets/fonts/NotoSansEthiopic.ttf'),
+
   });
 
   // Hydrate session on mount

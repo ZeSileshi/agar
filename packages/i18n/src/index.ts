@@ -1,12 +1,10 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
-import am from './locales/am.json';
 import es from './locales/es.json';
 
 export const SUPPORTED_LANGUAGES = {
   en: { name: 'English', nativeName: 'English', dir: 'ltr' },
-  am: { name: 'Amharic', nativeName: 'አማርኛ', dir: 'ltr' },
   es: { name: 'Spanish', nativeName: 'Español', dir: 'ltr' },
 } as const;
 
@@ -16,7 +14,6 @@ export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 
 export const resources = {
   en: { translation: en },
-  am: { translation: am },
   es: { translation: es },
 } as const;
 

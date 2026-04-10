@@ -1,8 +1,7 @@
 /**
  * Typography system for Agar mobile app.
  *
- * Uses Urbanist across the board for a compact, sleek look
- * + Noto Sans Ethiopic (Amharic support).
+ * Uses Urbanist across the board for a compact, sleek look.
  *
  * Fonts must be loaded via expo-font before use.
  */
@@ -17,7 +16,6 @@ export const fontFamily = {
   displayExtrabold: 'Urbanist_800ExtraBold',
   accent: 'Urbanist_500Medium',
   accentBold: 'Urbanist_700Bold',
-  ethiopic: 'NotoSansEthiopic',
 } as const;
 
 export const textStyles = {
